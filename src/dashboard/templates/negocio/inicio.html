@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ cliente.nombre_negocio }}{% endblock %}
+
+{% block nombre_negocio %}{{ cliente.nombre_negocio }}{% endblock %}
+
+{% block contenido %}
+<div class="mb-4">
+  <h4 class="fw-bold text-dark mb-0">Resumen de pagos</h4>
+  <p class="text-muted mb-0" style="font-size:.85rem">Actualizado automaticamente cada vez que se recibe un pago</p>
+</div>
+
+<!-- Metricas -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="card card-metrica h-100">
+      <div class="card-body p-4">
+        <div class="label-card">Hoy</div>
+        <div class="monto-card mt-2">{{ metricas.monto_hoy | formato_peso }}</div>
+        <div class="cantidad-card">{{ metricas.pagos_hoy }} pago{{ 's' if metricas.pagos_hoy != 1 else '' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card card-metrica h-100">
+      <div class="card-body p-4">
+        <div class="label-card">Esta semana</div>
+        <div class="monto-card mt-2">{{ metricas.monto_semana | formato_peso }}</div>
+        <div class="cantidad-card">{{ metricas.pagos_semana }} pago{{ 's' if metricas.pagos_semana != 1 else '' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card card-metrica h-100">
+      <div class="card-body p-4">
+        <div class="label-card">Este mes</div>
+        <div class="monto-card mt-2">{{ metricas.monto_mes | formato_peso }}</div>
+        <div class="cantidad-card">{{ metricas.pagos_mes }} pago{{ 's' if metricas.pagos_mes != 1 else '' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Historial -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="p-4 border-bottom">
+      <h6 class="fw-bold mb-0">Historial de pagos</h6>
+    </div>
+    {% if pagos %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr class="table-light">
+            <th class="ps-4">Fecha</th>
+            <th>Monto</th>
+            <th>Remitente</th>
+            <th>Banco</th>
+            <th>Telegram</th>
+            <th class="pe-4">Correo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pago in pagos %}
+          <tr>
+            <td class="ps-4 text-nowrap">{{ pago.fecha_pago | formato_fecha }}</td>
+            <td class="fw-semibold text-success">{{ pago.monto | formato_peso }}</td>
+            <td>{{ pago.remitente }}</td>
+            <td>
+              {% if pago.banco_origen == 'Bancolombia' %}
+                <span class="badge badge-bancolombia rounded-pill px-2 py-1">Bancolombia</span>
+              {% elif pago.banco_origen == 'Nequi' %}
+                <span class="badge badge-nequi rounded-pill px-2 py-1">Nequi</span>
+              {% else %}
+                <span class="badge bg-secondary rounded-pill px-2 py-1">{{ pago.banco_origen }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if pago.notificado_telegram %}
+                <span class="badge badge-ok rounded-pill px-2 py-1">Enviado</span>
+              {% else %}
+                <span class="badge badge-fail rounded-pill px-2 py-1">Pendiente</span>
+              {% endif %}
+            </td>
+            <td class="pe-4">
+              {% if pago.notificado_correo %}
+                <span class="badge badge-ok rounded-pill px-2 py-1">Enviado</span>
+              {% else %}
+                <span class="badge badge-fail rounded-pill px-2 py-1">Pendiente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="sin-pagos">
+      <p class="mb-0">Aun no hay pagos registrados.</p>
+      <p style="font-size:.82rem">Los pagos apareceran aqui automaticamente cuando se reciban.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

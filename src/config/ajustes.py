@@ -4,9 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Ajustes(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # Mailgun
-    mailgun_api_key: str = ""
-    mailgun_webhook_signing_key: str = ""
+    # Forward Email — inbound webhook
+    webhook_secret: str = ""
+
+    # Mailgun (inbound routing — solo MAILGUN_DOMINIO para crear direcciones por cliente)
     mailgun_dominio: str = ""
 
     # Telegram

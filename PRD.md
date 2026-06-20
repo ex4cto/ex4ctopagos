@@ -316,6 +316,13 @@ ruta (router) → servicio (service) → repositorio (repository) → modelo (mo
 - `requirements.txt` con versiones fijas
 - Config por cliente en BD, credenciales globales en `.env`
 
+### Commits
+
+- Commits atómicos: un commit = un cambio lógico completo y autocontenido
+- El mensaje describe el QUÉ y el POR QUÉ, no el cómo
+- Nunca mezclar refactors, features y fixes en un mismo commit
+- Cada commit debe dejar el proyecto en estado funcional
+
 ---
 
 ## 15. Testing

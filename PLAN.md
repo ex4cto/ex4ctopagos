@@ -50,30 +50,20 @@ Convención de estado: `[ ]` pendiente · `[→]` en progreso · `[x]` completo
 *Objetivo: recibir emails de Mailgun, validar firma y extraer payload correctamente.*
 
 ### Parte 2.1 — Validador de firma Mailgun
-- [ ] Crear `src/webhook/validador.py`:
-  - Función `validar_firma_mailgun(timestamp: str, token: str, signature: str) -> bool`
-  - HMAC-SHA256 de `(timestamp + token)` con `MAILGUN_WEBHOOK_SIGNING_KEY`
-  - Comparación con `hmac.compare_digest()`
-  - Verificación de timestamp (máx `WEBHOOK_TOKEN_EXPIRACION_MINUTOS` minutos)
-  - Verificación de token no usado antes (consulta `pago_repo.existe_token()`)
-- [ ] Crear excepción propia `ErrorFirmaInvalida(Exception)`
-- [ ] Escribir tests unitarios del validador con firmas correctas e incorrectas
+
+- [x] Crear `src/webhook/validador.py` — HMAC-SHA256 + timestamp + ErrorFirmaInvalida
+- [x] 4 tests unitarios — todos pasan
 
 ### Parte 2.2 — Schemas de entrada del webhook
-- [ ] Crear `src/webhook/schemas.py`:
-  - Modelo Pydantic `PayloadMailgun` con todos los campos que envía Mailgun
-  - Campos: `timestamp`, `token`, `signature`, `sender`, `recipient`, `subject`, `body_html`, `body_plain`
-  - Modelo `PagoExtraido` con: `monto`, `remitente`, `banco_origen`, `fecha_pago`
+
+- [x] Crear `src/webhook/schemas.py` — PayloadMailgun + PagoExtraido
 
 ### Parte 2.3 — Endpoint del webhook
-- [ ] Crear `src/webhook/rutas.py`:
-  - `POST /webhook/email` — recibe Form data de Mailgun
-  - Llama al validador → si falla retorna `403`
-  - Identifica el cliente por `recipient` (correo dedicado) → si no existe retorna `200` silencioso
-  - Pasa el payload al servicio `procesar_pago`
-  - Retorna `200` siempre que el request sea válido (Mailgun no reintenta en 2xx)
+
+- [x] Crear `src/webhook/rutas.py` — POST /webhook/email con validación + deduplicación
+- [x] Registrar router en `src/main.py`
 - [ ] Configurar Mailgun para apuntar webhook a este endpoint
-- [ ] Probar con un request manual (Postman/curl) con firma válida
+- [ ] Probar con un request manual con firma válida
 
 ---
 
