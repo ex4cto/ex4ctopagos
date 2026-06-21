@@ -1,16 +1,15 @@
-import asyncio
 import logging
-import smtplib
-import ssl
 from decimal import Decimal
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
+import httpx
 
 from src.config.ajustes import ajustes
 from src.modelos.pago import Pago
 from src.servicios.reintentos import ResultadoEnvio, ejecutar_con_reintentos
 
 logger = logging.getLogger(__name__)
+
+_URL_RESEND = "https://api.resend.com/emails"
 
 
 class ErrorNotificacionCorreo(Exception):
@@ -59,29 +58,24 @@ def formatear_cuerpo_html(pago: Pago, nombre_negocio: str) -> str:
 
 
 async def enviar_correo(destinatario: str, asunto: str, cuerpo_html: str) -> bool:
-    await asyncio.to_thread(_enviar_smtp, destinatario, asunto, cuerpo_html)
-    return True
-
-
-def _enviar_smtp(destinatario: str, asunto: str, cuerpo_html: str) -> None:
-    mensaje = MIMEMultipart("alternative")
-    mensaje["Subject"] = asunto
-    mensaje["From"] = ajustes.smtp_usuario
-    mensaje["To"] = destinatario
-    mensaje.attach(MIMEText(cuerpo_html, "html", "utf-8"))
-
-    if ajustes.smtp_puerto == 465:
-        contexto = ssl.create_default_context()
-        with smtplib.SMTP_SSL(ajustes.smtp_host, ajustes.smtp_puerto, context=contexto, timeout=15) as servidor:
-            servidor.login(ajustes.smtp_usuario, ajustes.smtp_clave)
-            servidor.sendmail(ajustes.smtp_usuario, [destinatario], mensaje.as_string())
-    else:
-        with smtplib.SMTP(ajustes.smtp_host, ajustes.smtp_puerto, timeout=15) as servidor:
-            servidor.starttls()
-            servidor.login(ajustes.smtp_usuario, ajustes.smtp_clave)
-            servidor.sendmail(ajustes.smtp_usuario, [destinatario], mensaje.as_string())
-
+    cabeceras = {
+        "Authorization": f"Bearer {ajustes.resend_api_key}",
+        "Content-Type": "application/json",
+    }
+    cuerpo = {
+        "from": ajustes.correo_remitente,
+        "to": [destinatario],
+        "subject": asunto,
+        "html": cuerpo_html,
+    }
+    async with httpx.AsyncClient(timeout=15) as cliente:
+        respuesta = await cliente.post(_URL_RESEND, json=cuerpo, headers=cabeceras)
+    if respuesta.status_code not in (200, 201):
+        raise ErrorNotificacionCorreo(
+            f"Resend error {respuesta.status_code}: {respuesta.text[:200]}"
+        )
     logger.info("Correo enviado a %s", destinatario)
+    return True
 
 
 async def notificar_todos(

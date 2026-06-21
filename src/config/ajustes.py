@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Ajustes(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Forward Email — inbound webhook
     webhook_secret: str = ""
@@ -16,11 +16,9 @@ class Ajustes(BaseSettings):
     # Base de datos
     database_url: str = ""
 
-    # Correo saliente
-    smtp_host: str = ""
-    smtp_puerto: int = 587
-    smtp_usuario: str = ""
-    smtp_clave: str = ""
+    # Correo saliente (Resend REST API)
+    resend_api_key: str = ""
+    correo_remitente: str = ""
 
     # Dashboard operador
     operador_clave: str = ""
