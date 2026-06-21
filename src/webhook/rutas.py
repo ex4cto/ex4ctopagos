@@ -22,20 +22,11 @@ def _extraer_remitente(datos: dict) -> str:
     return from_values[0].get("address", "") if from_values else ""
 
 
-def _extraer_correo_destinatario(datos: dict) -> str:
-    # envelope.to tiene la dirección real de entrega; el header "to" preserva
-    # el destinatario original cuando Gmail reenvía el correo al alias.
-    envelope_to = datos.get("envelope", {}).get("to", [])
-    if isinstance(envelope_to, list) and envelope_to:
-        return envelope_to[0]
-    to_values = datos.get("to", {}).get("value", [{}])
-    return to_values[0].get("address", "") if to_values else ""
-
-
 @enrutador.post("/email", response_model=None)
 async def recibir_email(
     request: Request,
     secret: str = Query(default=""),
+    correo: str = Query(default=""),
     sesion: Session = Depends(obtener_sesion),
 ) -> JSONResponse | dict[str, str]:
     try:
@@ -44,9 +35,12 @@ async def recibir_email(
         logger.warning("Webhook rechazado — secret invalido: %s", error)
         return JSONResponse(status_code=403, content={"error": "Acceso denegado"})
 
+    if not correo:
+        logger.warning("Webhook sin parametro correo — ignorado")
+        return _RESPUESTA_OK
+
     datos = await request.json()
     remitente_email = _extraer_remitente(datos)
-    correo_destinatario = _extraer_correo_destinatario(datos)
     message_id: str = datos.get("messageId", "")
 
     if not message_id:
@@ -57,15 +51,15 @@ async def recibir_email(
         logger.info("Email duplicado ignorado — messageId: %s", message_id)
         return _RESPUESTA_OK
 
-    cliente = cliente_repo.obtener_por_correo_dedicado(correo_destinatario, sesion)
+    cliente = cliente_repo.obtener_por_correo_dedicado(correo, sesion)
     if not cliente:
-        logger.warning("Cliente no encontrado para correo '%s'", correo_destinatario)
+        logger.warning("Cliente no encontrado para correo '%s'", correo)
         return _RESPUESTA_OK
 
     payload = PayloadEmail(
         message_id=message_id,
         remitente_email=remitente_email,
-        correo_destinatario=correo_destinatario,
+        correo_destinatario=correo,
         asunto=datos.get("subject", ""),
         cuerpo_html=datos.get("html", "") or "",
         cuerpo_texto=datos.get("text", "") or "",
