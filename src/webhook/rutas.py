@@ -58,11 +58,10 @@ async def recibir_email(
 
     html_crudo = datos.get("html", "")
     texto_crudo = datos.get("text", "")
-    logger.info("Campos crudos — html tipo=%s len=%s, text tipo=%s len=%s",
-                type(html_crudo).__name__, len(str(html_crudo)),
-                type(texto_crudo).__name__, len(str(texto_crudo)))
-    logger.info("Primeros 300 chars html: %.300s", str(html_crudo))
-    logger.info("Primeros 300 chars texto: %.300s", str(texto_crudo))
+    texto_str = str(texto_crudo)
+    tiene_recibiste = "recibiste" in texto_str.lower()
+    logger.info("Texto len=%s, contiene 'recibiste': %s", len(texto_str), tiene_recibiste)
+    logger.info("Texto chars 200-700: %s", texto_str[200:700])
 
     payload = PayloadEmail(
         message_id=message_id,
