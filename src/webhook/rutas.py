@@ -22,7 +22,7 @@ async def recibir_email(
     request: Request,
     secret: str = Query(default=""),
     sesion: Session = Depends(obtener_sesion),
-) -> dict:
+):
     try:
         validar_secret(secret)
     except ErrorSecretInvalido as error:
@@ -33,9 +33,17 @@ async def recibir_email(
 
     # Forward Email envia JSON con estructura mailparser
     from_values = datos.get("from", {}).get("value", [{}])
-    to_values = datos.get("to", {}).get("value", [{}])
     remitente_email = from_values[0].get("address", "") if from_values else ""
-    correo_destinatario = to_values[0].get("address", "") if to_values else ""
+
+    # Usar envelope.to para obtener la direccion real de entrega.
+    # Cuando Gmail reenvía un correo, el header "to" conserva el destinatario
+    # original (ej. soydavidalarcon1@gmail.com) en lugar de negocio1@ex4cto.co.
+    envelope_to = datos.get("envelope", {}).get("to", [])
+    if isinstance(envelope_to, list) and envelope_to:
+        correo_destinatario = envelope_to[0]
+    else:
+        to_values = datos.get("to", {}).get("value", [{}])
+        correo_destinatario = to_values[0].get("address", "") if to_values else ""
     message_id = datos.get("messageId", "")
 
     if not message_id:
