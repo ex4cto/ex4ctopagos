@@ -46,6 +46,10 @@ def crear(datos: PagoCrear, sesion: Session) -> Pago:
     return pago
 
 
+def obtener_por_id(pago_id: uuid.UUID, sesion: Session) -> "Pago | None":
+    return sesion.get(Pago, pago_id)
+
+
 def existe_token(token: str, sesion: Session) -> bool:
     return sesion.query(Pago).filter(Pago.token_idempotencia == token).first() is not None
 

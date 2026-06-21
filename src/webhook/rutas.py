@@ -1,12 +1,12 @@
 import logging
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from src.config.base_datos import obtener_sesion
 from src.repositorios import cliente_repo, pago_repo
-from src.servicios.procesar_pago import procesar_pago
+from src.servicios.procesar_pago import guardar_pago, notificar_background
 from src.webhook.schemas import PayloadEmail
 from src.webhook.validador import ErrorSecretInvalido, validar_secret
 
@@ -25,6 +25,7 @@ def _extraer_remitente(datos: dict) -> str:
 @enrutador.post("/email", response_model=None)
 async def recibir_email(
     request: Request,
+    background_tasks: BackgroundTasks,
     secret: str = Query(default=""),
     correo: str = Query(default=""),
     sesion: Session = Depends(obtener_sesion),
@@ -68,8 +69,12 @@ async def recibir_email(
     logger.info("Email recibido — de: %s, cliente: %s", remitente_email, cliente.nombre_negocio)
 
     try:
-        await procesar_pago(payload, cliente, sesion)
+        pago = await guardar_pago(payload, cliente, sesion)
     except Exception as error:
-        logger.exception("Error inesperado procesando pago: %s", error)
+        logger.exception("Error inesperado guardando pago: %s", error)
+        return _RESPUESTA_OK
+
+    if pago is not None:
+        background_tasks.add_task(notificar_background, pago.id, cliente.id)
 
     return _RESPUESTA_OK
