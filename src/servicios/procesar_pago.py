@@ -30,8 +30,8 @@ async def procesar_pago(
         )
         return
 
-    logger.info("DEBUG texto email (500c): %.500s", payload.cuerpo_texto)
-    logger.info("DEBUG html email (500c): %.500s", payload.cuerpo_html)
+    logger.info("Contenido texto plano: %.500s", payload.cuerpo_texto)
+    logger.info("Contenido html: %.500s", payload.cuerpo_html)
 
     try:
         pago_extraido = obtener_parser(banco).parsear(
