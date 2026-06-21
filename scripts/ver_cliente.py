@@ -7,7 +7,11 @@ from src.config.base_datos import SesionLocal
 from src.modelos.cliente import Cliente
 
 
-def ver_y_corregir_cliente(correo_dedicado: str, correos_notificacion: list[str] | None = None) -> None:
+def ver_y_corregir_cliente(
+    correo_dedicado: str,
+    correos_notificacion: list[str] | None = None,
+    telegram_chat_ids: list[str] | None = None,
+) -> None:
     with SesionLocal() as sesion:
         cliente = sesion.query(Cliente).filter(Cliente.correo_dedicado == correo_dedicado).first()
         if not cliente:
@@ -23,14 +27,26 @@ def ver_y_corregir_cliente(correo_dedicado: str, correos_notificacion: list[str]
         print(f"Token dashboard:       {cliente.token_dashboard}")
         print(f"Activo:                {cliente.activo}")
 
+        actualizado = False
         if correos_notificacion is not None:
             cliente.correos_notificacion = correos_notificacion
+            actualizado = True
+        if telegram_chat_ids is not None:
+            cliente.telegram_chat_ids = telegram_chat_ids
+            actualizado = True
+
+        if actualizado:
             sesion.commit()
-            print(f"\nActualizado — correos_notificacion: {correos_notificacion}")
+            print("\n--- Actualizado ---")
+            if correos_notificacion is not None:
+                print(f"correos_notificacion: {correos_notificacion}")
+            if telegram_chat_ids is not None:
+                print(f"telegram_chat_ids:    {telegram_chat_ids}")
 
 
 if __name__ == "__main__":
     ver_y_corregir_cliente(
         correo_dedicado="negocio1@ex4cto.co",
-        correos_notificacion=["encierraculo@gmail.com"],
+        # correos_notificacion=["nuevo@correo.com"],
+        # telegram_chat_ids=["-123456789"],
     )
