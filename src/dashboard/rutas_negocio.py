@@ -1,34 +1,15 @@
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from src.config.base_datos import obtener_sesion
+from src.dashboard.jinja import templates
 from src.repositorios import cliente_repo, pago_repo
 
 enrutador = APIRouter(tags=["dashboard"])
-
-templates = Jinja2Templates(directory="src/dashboard/templates")
-
-_ZONA_COLOMBIA = timedelta(hours=-5)
-
-
-def _formato_peso(monto: Decimal) -> str:
-    entero = int(monto)
-    return f"${entero:,}".replace(",", ".")
-
-
-def _formato_fecha(fecha: datetime) -> str:
-    hora_colombia = fecha.astimezone(timezone(timedelta(hours=-5)))
-    return hora_colombia.strftime("%d/%m/%Y %H:%M")
-
-
-templates.env.filters["formato_peso"] = _formato_peso
-templates.env.filters["formato_fecha"] = _formato_fecha
 
 
 @enrutador.get("/dashboard/{token}", response_class=HTMLResponse)

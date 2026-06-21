@@ -72,6 +72,18 @@ def listar_por_cliente(
     )
 
 
+def listar_recientes_global(sesion: Session, limite: int = 50) -> list[Pago]:
+    from sqlalchemy.orm import joinedload
+
+    return (
+        sesion.query(Pago)
+        .options(joinedload(Pago.cliente))
+        .order_by(Pago.fecha_recibido.desc())
+        .limit(limite)
+        .all()
+    )
+
+
 def calcular_metricas(cliente_id: uuid.UUID, ahora: datetime, sesion: Session) -> MetricasCliente:
     inicio_hoy = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
     inicio_semana = ahora.replace(hour=0, minute=0, second=0, microsecond=0)

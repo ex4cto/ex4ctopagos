@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operador — Ex4cto Pagos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .login-card { background: #fff; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+    .marca { font-size: 1.3rem; font-weight: 700; color: #0f172a; letter-spacing: .3px; }
+    .subtitulo { font-size: .85rem; color: #64748b; margin-top: .2rem; }
+    .btn-ingresar { background: #0f172a; color: #fff; border: none; width: 100%; padding: .75rem; border-radius: 8px; font-weight: 600; margin-top: .5rem; }
+    .btn-ingresar:hover { background: #1e293b; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <div class="marca">Ex4cto Pagos</div>
+      <div class="subtitulo">Panel de operador</div>
+    </div>
+    {% if error %}
+      <div class="alert alert-danger py-2 text-center" style="font-size:.87rem;">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/operador/login">
+      <div class="mb-3">
+        <label class="form-label fw-semibold" style="font-size:.9rem;">Clave de acceso</label>
+        <input type="password" name="clave" class="form-control" placeholder="••••••••" autofocus required>
+      </div>
+      <button type="submit" class="btn-ingresar">Ingresar</button>
+    </form>
+  </div>
+</body>
+</html>

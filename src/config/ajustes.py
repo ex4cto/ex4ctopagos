@@ -22,6 +22,7 @@ class Ajustes(BaseSettings):
 
     # Dashboard operador
     operador_clave: str = ""
+    secret_key: str = "cambia-esto-en-produccion"
 
     # Seguridad
     webhook_token_expiracion_minutos: int = 5
