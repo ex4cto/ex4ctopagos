@@ -1,12 +1,14 @@
 import asyncio
 import logging
 import smtplib
+import ssl
 from decimal import Decimal
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from src.config.ajustes import ajustes
 from src.modelos.pago import Pago
+from src.servicios.reintentos import ResultadoEnvio, ejecutar_con_reintentos
 
 logger = logging.getLogger(__name__)
 
@@ -68,26 +70,31 @@ def _enviar_smtp(destinatario: str, asunto: str, cuerpo_html: str) -> None:
     mensaje["To"] = destinatario
     mensaje.attach(MIMEText(cuerpo_html, "html", "utf-8"))
 
-    with smtplib.SMTP(ajustes.smtp_host, ajustes.smtp_puerto, timeout=15) as servidor:
-        servidor.starttls()
-        servidor.login(ajustes.smtp_usuario, ajustes.smtp_clave)
-        servidor.sendmail(ajustes.smtp_usuario, [destinatario], mensaje.as_string())
-        logger.info("Correo enviado a %s", destinatario)
+    if ajustes.smtp_puerto == 465:
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP_SSL(ajustes.smtp_host, ajustes.smtp_puerto, context=contexto, timeout=15) as servidor:
+            servidor.login(ajustes.smtp_usuario, ajustes.smtp_clave)
+            servidor.sendmail(ajustes.smtp_usuario, [destinatario], mensaje.as_string())
+    else:
+        with smtplib.SMTP(ajustes.smtp_host, ajustes.smtp_puerto, timeout=15) as servidor:
+            servidor.starttls()
+            servidor.login(ajustes.smtp_usuario, ajustes.smtp_clave)
+            servidor.sendmail(ajustes.smtp_usuario, [destinatario], mensaje.as_string())
+
+    logger.info("Correo enviado a %s", destinatario)
 
 
 async def notificar_todos(
     correos: list[str],
     pago: Pago,
     nombre_negocio: str,
-) -> dict[str, "ResultadoEnvio"]:
-    from src.servicios.reintentos import ResultadoEnvio, ejecutar_con_reintentos
-
+) -> dict[str, ResultadoEnvio]:
     asunto = formatear_asunto(pago)
     cuerpo_html = formatear_cuerpo_html(pago, nombre_negocio)
     resultados: dict[str, ResultadoEnvio] = {}
-    for correo in correos:
-        resultados[correo] = await ejecutar_con_reintentos(
-            fn=lambda dest=correo: enviar_correo(dest, asunto, cuerpo_html),
+    for destino in correos:
+        resultados[destino] = await ejecutar_con_reintentos(
+            fn=lambda d=destino: enviar_correo(d, asunto, cuerpo_html),
             max_intentos=ajustes.max_reintentos_notificacion,
             intervalo_segundos=ajustes.intervalo_reintento_segundos,
         )
