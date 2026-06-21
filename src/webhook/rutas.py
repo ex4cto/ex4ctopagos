@@ -56,13 +56,21 @@ async def recibir_email(
         logger.warning("Cliente no encontrado para correo '%s'", correo)
         return _RESPUESTA_OK
 
+    html_crudo = datos.get("html", "")
+    texto_crudo = datos.get("text", "")
+    logger.info("Campos crudos — html tipo=%s len=%s, text tipo=%s len=%s",
+                type(html_crudo).__name__, len(str(html_crudo)),
+                type(texto_crudo).__name__, len(str(texto_crudo)))
+    logger.info("Primeros 300 chars html: %.300s", str(html_crudo))
+    logger.info("Primeros 300 chars texto: %.300s", str(texto_crudo))
+
     payload = PayloadEmail(
         message_id=message_id,
         remitente_email=remitente_email,
         correo_destinatario=correo,
         asunto=datos.get("subject", ""),
-        cuerpo_html=datos.get("html", "") or "",
-        cuerpo_texto=datos.get("text", "") or "",
+        cuerpo_html=html_crudo or "",
+        cuerpo_texto=texto_crudo or "",
     )
 
     logger.info("Email recibido — de: %s, cliente: %s", remitente_email, cliente.nombre_negocio)
