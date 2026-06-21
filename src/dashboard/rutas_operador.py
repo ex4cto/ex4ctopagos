@@ -36,8 +36,8 @@ def _metricas_globales(filas: list[dict]) -> dict[str, Decimal | int]:
     }
 
 
-@enrutador.get("/login", response_class=HTMLResponse)
-def get_login(request: Request) -> HTMLResponse:
+@enrutador.get("/login", response_class=HTMLResponse, response_model=None)
+def get_login(request: Request) -> HTMLResponse | RedirectResponse:
     if _autenticado(request):
         return RedirectResponse("/operador/dashboard", status_code=302)
     return templates.TemplateResponse(
@@ -45,7 +45,7 @@ def get_login(request: Request) -> HTMLResponse:
     )
 
 
-@enrutador.post("/login")
+@enrutador.post("/login", response_model=None)
 def post_login(
     request: Request, clave: str = Form(...)
 ) -> HTMLResponse | RedirectResponse:
@@ -65,7 +65,7 @@ def logout(request: Request) -> RedirectResponse:
     return RedirectResponse("/operador/login", status_code=302)
 
 
-@enrutador.get("/dashboard", response_class=HTMLResponse)
+@enrutador.get("/dashboard", response_class=HTMLResponse, response_model=None)
 def dashboard_operador(
     request: Request,
     sesion: Session = Depends(obtener_sesion),
