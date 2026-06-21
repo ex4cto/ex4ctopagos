@@ -32,7 +32,7 @@ def _extraer_correo_destinatario(datos: dict) -> str:
     return to_values[0].get("address", "") if to_values else ""
 
 
-@enrutador.post("/email")
+@enrutador.post("/email", response_model=None)
 async def recibir_email(
     request: Request,
     secret: str = Query(default=""),
