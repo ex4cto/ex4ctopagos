@@ -1,10 +1,12 @@
 import logging
 from decimal import Decimal
+from functools import partial
 
 import httpx
 
 from src.config.ajustes import ajustes
 from src.modelos.pago import Pago
+from src.servicios.reintentos import ResultadoEnvio, ejecutar_con_reintentos
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +52,12 @@ async def notificar_todos(
     chat_ids: list[str],
     pago: Pago,
     nombre_negocio: str,
-) -> dict[str, "ResultadoEnvio"]:
-    from src.servicios.reintentos import ResultadoEnvio, ejecutar_con_reintentos
-
+) -> dict[str, ResultadoEnvio]:
     mensaje = formatear_mensaje(pago, nombre_negocio)
     resultados: dict[str, ResultadoEnvio] = {}
     for chat_id in chat_ids:
         resultados[chat_id] = await ejecutar_con_reintentos(
-            fn=lambda cid=chat_id: enviar_mensaje(cid, mensaje),
+            fn=partial(enviar_mensaje, chat_id, mensaje),
             max_intentos=ajustes.max_reintentos_notificacion,
             intervalo_segundos=ajustes.intervalo_reintento_segundos,
         )

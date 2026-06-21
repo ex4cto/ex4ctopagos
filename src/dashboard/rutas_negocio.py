@@ -11,6 +11,8 @@ from src.repositorios import cliente_repo, pago_repo
 
 enrutador = APIRouter(tags=["dashboard"])
 
+_FECHA_INICIO_HISTORICO = datetime(2020, 1, 1, tzinfo=timezone.utc)
+
 
 @enrutador.get("/dashboard/{token}", response_class=HTMLResponse)
 def dashboard_negocio(
@@ -30,7 +32,7 @@ def dashboard_negocio(
     metricas = pago_repo.calcular_metricas(cliente.id, ahora, sesion)
     pagos = pago_repo.listar_por_cliente(
         cliente.id,
-        desde=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        desde=_FECHA_INICIO_HISTORICO,
         hasta=ahora,
         sesion=sesion,
         limite=100,

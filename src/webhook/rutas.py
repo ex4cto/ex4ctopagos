@@ -16,10 +16,19 @@ enrutador = APIRouter(prefix="/webhook", tags=["webhook"])
 
 _RESPUESTA_OK: dict[str, str] = {"estado": "ok"}
 
+# Claves del payload JSON de Forward Email webhook
+_CLAVE_FROM = "from"
+_CLAVE_VALUE = "value"
+_CLAVE_ADDRESS = "address"
+_CLAVE_MESSAGE_ID = "messageId"
+_CLAVE_SUBJECT = "subject"
+_CLAVE_HTML = "html"
+_CLAVE_TEXT = "text"
+
 
 def _extraer_remitente(datos: dict) -> str:
-    from_values = datos.get("from", {}).get("value", [{}])
-    return from_values[0].get("address", "") if from_values else ""
+    from_values = datos.get(_CLAVE_FROM, {}).get(_CLAVE_VALUE, [{}])
+    return from_values[0].get(_CLAVE_ADDRESS, "") if from_values else ""
 
 
 @enrutador.post("/email", response_model=None)
@@ -42,7 +51,7 @@ async def recibir_email(
 
     datos = await request.json()
     remitente_email = _extraer_remitente(datos)
-    message_id: str = datos.get("messageId", "")
+    message_id: str = datos.get(_CLAVE_MESSAGE_ID, "")
 
     if not message_id:
         logger.warning("Email sin messageId — ignorado")
@@ -61,9 +70,9 @@ async def recibir_email(
         message_id=message_id,
         remitente_email=remitente_email,
         correo_destinatario=correo,
-        asunto=datos.get("subject", ""),
-        cuerpo_html=datos.get("html", "") or "",
-        cuerpo_texto=datos.get("text", "") or "",
+        asunto=datos.get(_CLAVE_SUBJECT, ""),
+        cuerpo_html=datos.get(_CLAVE_HTML, "") or "",
+        cuerpo_texto=datos.get(_CLAVE_TEXT, "") or "",
     )
 
     logger.info("Email recibido — de: %s, cliente: %s", remitente_email, cliente.nombre_negocio)

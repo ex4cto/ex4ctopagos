@@ -1,5 +1,6 @@
 import logging
 from decimal import Decimal
+from functools import partial
 
 import httpx
 
@@ -11,20 +12,8 @@ logger = logging.getLogger(__name__)
 
 _URL_FORWARDEMAIL = "https://api.forwardemail.net/v1/emails"
 
-
-class ErrorNotificacionCorreo(Exception):
-    pass
-
-
-def formatear_asunto(pago: Pago) -> str:
-    monto_fmt = _formatear_monto(pago.monto)
-    return f"Pago recibido — {monto_fmt} via {pago.banco_origen}"
-
-
-def formatear_cuerpo_html(pago: Pago, nombre_negocio: str) -> str:
-    monto_fmt = _formatear_monto(pago.monto)
-    fecha_fmt = pago.fecha_pago.strftime("%d/%m/%Y %H:%M")
-    return f"""<!DOCTYPE html>
+_PLANTILLA_HTML = """\
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -45,16 +34,35 @@ def formatear_cuerpo_html(pago: Pago, nombre_negocio: str) -> str:
   <div class="tarjeta">
     <h2>Nuevo pago recibido</h2>
     <table>
-      <tr><td>Negocio</td><td><b>{nombre_negocio}</b></td></tr>
-      <tr><td>Monto</td><td class="monto">{monto_fmt}</td></tr>
-      <tr><td>De</td><td>{pago.remitente}</td></tr>
-      <tr><td>Banco</td><td>{pago.banco_origen}</td></tr>
-      <tr><td>Fecha</td><td>{fecha_fmt}</td></tr>
+      <tr><td>Negocio</td><td><b>{negocio}</b></td></tr>
+      <tr><td>Monto</td><td class="monto">{monto}</td></tr>
+      <tr><td>De</td><td>{remitente}</td></tr>
+      <tr><td>Banco</td><td>{banco}</td></tr>
+      <tr><td>Fecha</td><td>{fecha}</td></tr>
     </table>
     <p class="pie">Notificacion automatica — Bot de Comprobante de Pago</p>
   </div>
 </body>
 </html>"""
+
+
+class ErrorNotificacionCorreo(Exception):
+    pass
+
+
+def formatear_asunto(pago: Pago) -> str:
+    monto_fmt = _formatear_monto(pago.monto)
+    return f"Pago recibido — {monto_fmt} via {pago.banco_origen}"
+
+
+def formatear_cuerpo_html(pago: Pago, nombre_negocio: str) -> str:
+    return _PLANTILLA_HTML.format(
+        negocio=nombre_negocio,
+        monto=_formatear_monto(pago.monto),
+        remitente=pago.remitente,
+        banco=pago.banco_origen,
+        fecha=pago.fecha_pago.strftime("%d/%m/%Y %H:%M"),
+    )
 
 
 async def enviar_correo(destinatario: str, asunto: str, cuerpo_html: str) -> bool:
@@ -85,7 +93,7 @@ async def notificar_todos(
     resultados: dict[str, ResultadoEnvio] = {}
     for destino in correos:
         resultados[destino] = await ejecutar_con_reintentos(
-            fn=lambda d=destino: enviar_correo(d, asunto, cuerpo_html),
+            fn=partial(enviar_correo, destino, asunto, cuerpo_html),
             max_intentos=ajustes.max_reintentos_notificacion,
             intervalo_segundos=ajustes.intervalo_reintento_segundos,
         )

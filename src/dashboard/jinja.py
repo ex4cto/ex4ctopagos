@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 
 from fastapi.templating import Jinja2Templates
 
@@ -14,6 +15,6 @@ def _formato_fecha(fecha: datetime) -> str:
     return hora_colombia.strftime("%d/%m/%Y %H:%M")
 
 
-templates = Jinja2Templates(directory="src/dashboard/templates")
+templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 templates.env.filters["formato_peso"] = _formato_peso
 templates.env.filters["formato_fecha"] = _formato_fecha

@@ -1,12 +1,10 @@
-"""
-Script para insertar un cliente en la BD.
-Uso: python scripts/insertar_cliente.py
-"""
+"""Inserta un nuevo cliente en la BD. Uso: python scripts/insertar_cliente.py"""
 import sys
 import uuid
 
 sys.path.insert(0, ".")
 
+from src.config.ajustes import ajustes
 from src.config.base_datos import SesionLocal
 from src.modelos.cliente import Cliente
 
@@ -49,7 +47,7 @@ def insertar_cliente(
         print(f"  Token dashboard:  {cliente.token_dashboard}")
         print()
         print("URL del dashboard:")
-        print(f"  https://ex4ctopagos-production.up.railway.app/dashboard/{cliente.token_dashboard}")
+        print(f"  {ajustes.app_url}/dashboard/{cliente.token_dashboard}")
     finally:
         sesion.close()
 

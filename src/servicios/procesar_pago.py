@@ -83,6 +83,7 @@ async def _enviar_notificaciones(pago: Pago, cliente: Cliente, sesion: Session) 
 
 
 async def notificar_background(pago_id: uuid.UUID, cliente_id: uuid.UUID) -> None:
+    # Import aqui para evitar ciclo: base_datos → modelos → servicios → base_datos
     from src.config.base_datos import SesionLocal
 
     with SesionLocal() as sesion:

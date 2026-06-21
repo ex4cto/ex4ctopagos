@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+_ERROR_RETORNO_FALSE = "Funcion retorno False sin excepcion"
+
 
 @dataclass
 class ResultadoEnvio:
@@ -23,7 +25,7 @@ async def ejecutar_con_reintentos(
         try:
             if await fn():
                 return ResultadoEnvio(exito=True, intentos=intento)
-            ultimo_error = "Funcion retorno False sin excepcion"
+            ultimo_error = _ERROR_RETORNO_FALSE
         except Exception as error:
             ultimo_error = str(error)
             logger.warning("Intento %d/%d fallido: %s", intento, max_intentos, error)

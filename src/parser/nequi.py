@@ -2,7 +2,7 @@ import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
-from src.parser.base import ErrorParseoBanco, ParserBanco
+from src.parser.base import BANCO_NEQUI, ErrorParseoBanco, ParserBanco
 from src.webhook.schemas import PagoExtraido
 
 # Patrón real confirmado con correo Nequi (Bre-B recibido):
@@ -33,7 +33,7 @@ class ParserNequi(ParserBanco):
         return PagoExtraido(
             monto=monto,
             remitente=remitente,
-            banco_origen="Nequi",
+            banco_origen=BANCO_NEQUI,
             fecha_pago=fecha_pago,
         )
 

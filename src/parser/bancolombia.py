@@ -2,7 +2,7 @@ import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
-from src.parser.base import ErrorParseoBanco, ParserBanco
+from src.parser.base import BANCO_BANCOLOMBIA, ErrorParseoBanco, ParserBanco
 from src.webhook.schemas import PagoExtraido
 
 _PATRON_RECIBIDO = re.compile(
@@ -33,7 +33,7 @@ class ParserBancolombia(ParserBanco):
         return PagoExtraido(
             monto=monto,
             remitente=remitente,
-            banco_origen="Bancolombia",
+            banco_origen=BANCO_BANCOLOMBIA,
             fecha_pago=fecha_pago,
         )
 

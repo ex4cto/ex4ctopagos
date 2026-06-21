@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.modelos.pago import Pago
 
@@ -73,8 +73,6 @@ def listar_por_cliente(
 
 
 def listar_recientes_global(sesion: Session, limite: int = 50) -> list[Pago]:
-    from sqlalchemy.orm import joinedload
-
     return (
         sesion.query(Pago)
         .options(joinedload(Pago.cliente))

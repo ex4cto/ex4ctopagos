@@ -7,9 +7,6 @@ class Ajustes(BaseSettings):
     # Forward Email — inbound webhook
     webhook_secret: str = ""
 
-    # Mailgun (inbound routing — solo MAILGUN_DOMINIO para crear direcciones por cliente)
-    mailgun_dominio: str = ""
-
     # Telegram
     telegram_bot_token: str = ""
 
@@ -31,6 +28,7 @@ class Ajustes(BaseSettings):
 
     # App
     ambiente: str = "desarrollo"
+    app_url: str = "https://ex4ctopagos-production.up.railway.app"
 
 
 ajustes = Ajustes()
