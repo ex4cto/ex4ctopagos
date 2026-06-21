@@ -38,7 +38,7 @@ class TestDeteccionBanco:
         assert detectar_banco(email) == BANCO_BANCOLOMBIA
 
     def test_detecta_nequi(self) -> None:
-        email = "notificaciones@nequi.com.com"
+        email = "notificaciones@nequi.com.co"
         assert detectar_banco(email) == BANCO_NEQUI
 
     def test_banco_desconocido_retorna_none(self) -> None:

@@ -39,8 +39,10 @@ async def recibir_email(
     correo: str = Query(default=""),
     sesion: Session = Depends(obtener_sesion),
 ) -> JSONResponse | dict[str, str]:
+    # Preferir header sobre query param — el header no queda en logs del proxy
+    secret_efectivo = request.headers.get("X-Webhook-Secret", secret)
     try:
-        validar_secret(secret)
+        validar_secret(secret_efectivo)
     except ErrorSecretInvalido as error:
         logger.warning("Webhook rechazado — secret invalido: %s", error)
         return JSONResponse(status_code=403, content={"error": "Acceso denegado"})
@@ -49,7 +51,11 @@ async def recibir_email(
         logger.warning("Webhook sin parametro correo — ignorado")
         return _RESPUESTA_OK
 
-    datos = await request.json()
+    try:
+        datos = await request.json()
+    except Exception:
+        logger.warning("Webhook con body JSON invalido — ignorado")
+        return _RESPUESTA_OK
     remitente_email = _extraer_remitente(datos)
     message_id: str = datos.get(_CLAVE_MESSAGE_ID, "")
 

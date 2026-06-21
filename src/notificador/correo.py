@@ -1,3 +1,4 @@
+import html
 import logging
 from decimal import Decimal
 from functools import partial
@@ -57,10 +58,10 @@ def formatear_asunto(pago: Pago) -> str:
 
 def formatear_cuerpo_html(pago: Pago, nombre_negocio: str) -> str:
     return _PLANTILLA_HTML.format(
-        negocio=nombre_negocio,
+        negocio=html.escape(nombre_negocio),
         monto=_formatear_monto(pago.monto),
-        remitente=pago.remitente,
-        banco=pago.banco_origen,
+        remitente=html.escape(pago.remitente),
+        banco=html.escape(pago.banco_origen),
         fecha=pago.fecha_pago.strftime("%d/%m/%Y %H:%M"),
     )
 

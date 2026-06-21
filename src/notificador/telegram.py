@@ -1,3 +1,4 @@
+import html
 import logging
 from decimal import Decimal
 from functools import partial
@@ -22,10 +23,10 @@ def formatear_mensaje(pago: Pago, nombre_negocio: str) -> str:
     fecha_fmt = pago.fecha_pago.strftime("%d/%m/%Y %H:%M")
     return (
         f"<b>Nuevo pago recibido</b>\n\n"
-        f"<b>Negocio:</b> {nombre_negocio}\n"
+        f"<b>Negocio:</b> {html.escape(nombre_negocio)}\n"
         f"<b>Monto:</b> {monto_fmt}\n"
-        f"<b>De:</b> {pago.remitente}\n"
-        f"<b>Banco:</b> {pago.banco_origen}\n"
+        f"<b>De:</b> {html.escape(pago.remitente)}\n"
+        f"<b>Banco:</b> {html.escape(pago.banco_origen)}\n"
         f"<b>Fecha:</b> {fecha_fmt}"
     )
 

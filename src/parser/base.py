@@ -12,7 +12,6 @@ _DOMINIOS_BANCOLOMBIA = frozenset([
 ])
 
 _DOMINIOS_NEQUI = frozenset([
-    "nequi.com.com",
     "nequi.com.co",
 ])
 
@@ -29,8 +28,8 @@ class ParserBanco(ABC):
 
 def detectar_banco(remitente_email: str) -> str | None:
     dominio = remitente_email.lower().split("@")[-1]
-    if any(d in dominio for d in _DOMINIOS_BANCOLOMBIA):
+    if dominio in _DOMINIOS_BANCOLOMBIA:
         return BANCO_BANCOLOMBIA
-    if any(d in dominio for d in _DOMINIOS_NEQUI):
+    if dominio in _DOMINIOS_NEQUI:
         return BANCO_NEQUI
     return None

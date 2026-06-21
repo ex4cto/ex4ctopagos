@@ -52,7 +52,7 @@ async def guardar_pago(
         ),
         sesion,
     )
-    logger.info(
+    logger.debug(
         "Pago %s guardado — monto: %s, remitente: %s",
         pago.id,
         pago.monto,
@@ -71,7 +71,7 @@ async def _enviar_notificaciones(pago: Pago, cliente: Cliente, sesion: Session) 
             pago.notificado_telegram = True
 
     correos: list[str] = cliente.correos_notificacion or []
-    logger.info("Notificacion correo — destinatarios configurados: %s", correos)
+    logger.debug("Notificacion correo — destinatarios configurados: %s", correos)
     if correos:
         resultados_email = await correo_notificador.notificar_todos(correos, pago, cliente.nombre_negocio)
         for correo, resultado in resultados_email.items():
