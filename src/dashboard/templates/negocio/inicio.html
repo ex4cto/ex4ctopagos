@@ -55,7 +55,8 @@
             <th class="ps-4">Fecha</th>
             <th>Monto</th>
             <th>Remitente</th>
-            <th>Banco</th>
+            <th>Banco origen</th>
+            <th>Banco destino</th>
             <th>Telegram</th>
             <th class="pe-4">Correo</th>
           </tr>
@@ -75,6 +76,7 @@
                 <span class="badge bg-secondary rounded-pill px-2 py-1">{{ pago.banco_origen }}</span>
               {% endif %}
             </td>
+            <td><span class="badge badge-bancolombia rounded-pill px-2 py-1">Bancolombia</span></td>
             <td>
               {% if pago.notificado_telegram %}
                 <span class="badge badge-ok rounded-pill px-2 py-1">Enviado</span>

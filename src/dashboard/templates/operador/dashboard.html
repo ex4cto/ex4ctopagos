@@ -87,7 +87,8 @@
             <th class="px-4 py-3">Fecha</th>
             <th>Cliente</th>
             <th>Remitente</th>
-            <th>Banco</th>
+            <th>Banco origen</th>
+            <th>Banco destino</th>
             <th class="text-end">Monto</th>
             <th class="text-center">TG</th>
             <th class="text-center px-4">Email</th>
@@ -106,6 +107,7 @@
                 <span class="badge badge-nequi">Nequi</span>
               {% endif %}
             </td>
+            <td><span class="badge badge-bancolombia">Bancolombia</span></td>
             <td class="text-end fw-semibold" style="color:#16a34a;">{{ pago.monto | formato_peso }}</td>
             <td class="text-center">
               {% if pago.notificado_telegram %}
