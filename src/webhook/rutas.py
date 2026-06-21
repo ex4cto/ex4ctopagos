@@ -56,8 +56,8 @@ async def recibir_email(
         remitente_email=remitente_email,
         correo_destinatario=correo_destinatario,
         asunto=datos.get("subject", ""),
-        cuerpo_html=datos.get("html", ""),
-        cuerpo_texto=datos.get("text", ""),
+        cuerpo_html=datos.get("html", "") or "",
+        cuerpo_texto=datos.get("text", "") or "",
     )
 
     logger.info(
