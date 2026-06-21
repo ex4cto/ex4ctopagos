@@ -15,6 +15,14 @@ TEXTO_BANCOLOMBIA_RECIBIDO = (
     "a las 03:27. Con llaves es de una y gratis. Dudas al 018000912345."
 )
 
+# Mismo contenido pero con saltos de linea como llega en el cuerpo texto del webhook
+TEXTO_BANCOLOMBIA_MULTILINEA = (
+    "Bancolombia: BRYAN, recibiste una\n"
+    "transferencia de BRYAN DAVID CASTRO ALARCON por $100.00 en tu cuenta *7488\n"
+    "conectada a la llave 1047487553 el 20/06/26 a las 22:38. Con llaves es de una y\n"
+    "gratis. Dudas al 018000912345."
+)
+
 # Texto real extraido del correo Nequi (Bre-B recibido)
 TEXTO_NEQUI_RECIBIDO = (
     "¡Hola, BRYAN CASTRO!\n\n"
@@ -58,6 +66,12 @@ class TestParserBancolombia:
         parser = ParserBancolombia()
         resultado = parser.parsear("", TEXTO_BANCOLOMBIA_RECIBIDO)
         assert resultado.banco_origen == "Bancolombia"
+
+    def test_parsea_texto_con_saltos_de_linea(self) -> None:
+        parser = ParserBancolombia()
+        resultado = parser.parsear("", TEXTO_BANCOLOMBIA_MULTILINEA)
+        assert resultado.monto == Decimal("100.00")
+        assert resultado.remitente == "BRYAN DAVID CASTRO ALARCON"
 
     def test_falla_con_texto_invalido(self) -> None:
         parser = ParserBancolombia()

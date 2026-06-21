@@ -6,8 +6,8 @@ from src.parser.base import ErrorParseoBanco, ParserBanco
 from src.webhook.schemas import PagoExtraido
 
 _PATRON_RECIBIDO = re.compile(
-    r'recibiste una transferencia de (.+?) por \$([\d,]+(?:\.\d{2})?)'
-    r'.+?el (\d{2}/\d{2}/\d{2,4}) a las (\d{2}:\d{2})',
+    r'recibiste\s+una\s+transferencia\s+de\s+(.+?)\s+por\s+\$([\d,]+(?:\.\d{2})?)'
+    r'.+?el\s+(\d{2}/\d{2}/\d{2,4})\s+a\s+las\s+(\d{2}:\d{2})',
     re.IGNORECASE | re.DOTALL,
 )
 
