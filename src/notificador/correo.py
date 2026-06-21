@@ -9,7 +9,7 @@ from src.servicios.reintentos import ResultadoEnvio, ejecutar_con_reintentos
 
 logger = logging.getLogger(__name__)
 
-_URL_RESEND = "https://api.resend.com/emails"
+_URL_FORWARDEMAIL = "https://api.forwardemail.net/v1/emails"
 
 
 class ErrorNotificacionCorreo(Exception):
@@ -58,21 +58,18 @@ def formatear_cuerpo_html(pago: Pago, nombre_negocio: str) -> str:
 
 
 async def enviar_correo(destinatario: str, asunto: str, cuerpo_html: str) -> bool:
-    cabeceras = {
-        "Authorization": f"Bearer {ajustes.resend_api_key}",
-        "Content-Type": "application/json",
-    }
+    auth = (ajustes.correo_remitente, ajustes.correo_clave)
     cuerpo = {
         "from": ajustes.correo_remitente,
-        "to": [destinatario],
+        "to": destinatario,
         "subject": asunto,
         "html": cuerpo_html,
     }
     async with httpx.AsyncClient(timeout=15) as cliente:
-        respuesta = await cliente.post(_URL_RESEND, json=cuerpo, headers=cabeceras)
+        respuesta = await cliente.post(_URL_FORWARDEMAIL, json=cuerpo, auth=auth)
     if respuesta.status_code not in (200, 201):
         raise ErrorNotificacionCorreo(
-            f"Resend error {respuesta.status_code}: {respuesta.text[:200]}"
+            f"Forward Email API error {respuesta.status_code}: {respuesta.text[:200]}"
         )
     logger.info("Correo enviado a %s", destinatario)
     return True

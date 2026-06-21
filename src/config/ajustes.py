@@ -16,9 +16,9 @@ class Ajustes(BaseSettings):
     # Base de datos
     database_url: str = ""
 
-    # Correo saliente (Resend REST API)
-    resend_api_key: str = ""
+    # Correo saliente (Forward Email REST API)
     correo_remitente: str = ""
+    correo_clave: str = ""
 
     # Dashboard operador
     operador_clave: str = ""
