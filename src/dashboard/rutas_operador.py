@@ -23,9 +23,6 @@ _intentos_login: dict[str, list[float]] = defaultdict(list)
 
 
 def _obtener_ip(request: Request) -> str:
-    encabezado = request.headers.get("X-Forwarded-For")
-    if encabezado:
-        return encabezado.split(",")[0].strip()
     return request.client.host if request.client else "desconocido"
 
 
