@@ -18,11 +18,13 @@ Tiempo estimado: **15 minutos por cliente**.
 1. Entra a [forwardemail.net](https://forwardemail.net) → **Dominios** → **ex4cto.co** → **Alias**
 2. Haz clic en **Alias +**
 3. En **Nombre** pon el identificador del negocio (sin espacios, minúsculas). Ejemplo: `negocio2`
-4. En **Destinatarios de reenvío** pega esta URL (cambia `negocio2` por el nombre que elegiste):
+4. En **Destinatarios de reenvío** pega esta URL (cambia `negocio2` por el nombre que elegiste, y `TU_WEBHOOK_SECRET_AQUI` por el valor de `WEBHOOK_SECRET` en Railway):
 
 ```
-https://ex4ctopagos-production.up.railway.app/webhook/email?secret=YYbaAD-9q96qSJ8DZhlxMEri4CsJY1H2Sq9mA2m32JE&correo=negocio2@ex4cto.co
+https://ex4ctopagos-production.up.railway.app/webhook/email?secret=TU_WEBHOOK_SECRET_AQUI&correo=negocio2@ex4cto.co
 ```
+
+   > **Nota de seguridad:** Forward Email no soporta headers personalizados, por lo que el secret viaja en la URL. Esto es una limitación conocida de la plataforma. Si el secret se expone, rotarlo en Railway y actualizar esta URL en todos los alias activos.
 
 5. Haz clic en **Actualizar alias** (o **Crear alias**)
 
@@ -153,6 +155,15 @@ Esta URL es privada — solo quienes la tengan pueden ver los pagos del negocio.
 | 4. Telegram (opcional) | Cliente + Operador | 5 min |
 | 5. Prueba de pago | Cliente | 2 min |
 | 6. Entregar URL del dashboard | Operador | 1 min |
+
+---
+
+## Seguridad — recordatorios operativos
+
+- **WEBHOOK_SECRET:** rotar en Forward Email si se sospecha que fue expuesto. Actualizar la variable en Railway inmediatamente después.
+- **TOKEN_DASHBOARD de clientes:** el token de acceso al dashboard no expira. Si la URL de un cliente se filtra, actualiza `token_dashboard` en la base de datos manualmente y entrega la nueva URL al cliente.
+- **TELEGRAM_BOT_TOKEN:** rotar en @BotFather si se sospecha compromiso. Volver a registrar el webhook con `/scripts/registrar_webhook_telegram.py`.
+- **`AMBIENTE` en Railway DEBE ser `produccion`** — en ningún otro valor. Esto desactiva el logging SQL y las rutas `/docs`.
 
 ---
 
