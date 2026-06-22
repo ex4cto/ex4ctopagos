@@ -1,5 +1,7 @@
 import uuid
 
+from sqlalchemy import cast
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 from src.modelos.cliente import Cliente
@@ -15,6 +17,17 @@ def obtener_por_id(id_cliente: uuid.UUID, sesion: Session) -> Cliente | None:
 
 def obtener_por_token_dashboard(token: uuid.UUID, sesion: Session) -> Cliente | None:
     return sesion.query(Cliente).filter(Cliente.token_dashboard == token, Cliente.activo.is_(True)).first()
+
+
+def obtener_por_chat_id(chat_id: str, sesion: Session) -> Cliente | None:
+    return (
+        sesion.query(Cliente)
+        .filter(
+            Cliente.activo.is_(True),
+            Cliente.telegram_chat_ids.op("@>")(cast([chat_id], JSONB)),
+        )
+        .first()
+    )
 
 
 def listar_activos(sesion: Session) -> list[Cliente]:

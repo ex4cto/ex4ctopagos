@@ -8,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from src.config.ajustes import ajustes
 from src.dashboard.rutas_negocio import enrutador as enrutador_dashboard
 from src.dashboard.rutas_operador import enrutador as enrutador_operador
+from src.telegram.rutas import enrutador as enrutador_telegram
 from src.webhook.rutas import enrutador as enrutador_webhook
 
 logging.basicConfig(
@@ -52,6 +53,7 @@ class _CabecerasSeguridad(BaseHTTPMiddleware):
 aplicacion.add_middleware(_CabecerasSeguridad)
 
 aplicacion.include_router(enrutador_webhook)
+aplicacion.include_router(enrutador_telegram)
 aplicacion.include_router(enrutador_dashboard)
 aplicacion.include_router(enrutador_operador)
 

@@ -9,6 +9,7 @@ class Ajustes(BaseSettings):
 
     # Telegram
     telegram_bot_token: str = ""
+    telegram_webhook_secret: str = ""
 
     # Base de datos
     database_url: str = ""

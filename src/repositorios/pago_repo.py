@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -68,6 +68,21 @@ def listar_por_cliente(
         .order_by(Pago.fecha_pago.desc())
         .limit(limite)
         .offset(offset)
+        .all()
+    )
+
+
+def listar_ultimos_minutos(
+    cliente_id: uuid.UUID,
+    minutos: int,
+    ahora: datetime,
+    sesion: Session,
+) -> list[Pago]:
+    desde = ahora - timedelta(minutes=minutos)
+    return (
+        sesion.query(Pago)
+        .filter(Pago.cliente_id == cliente_id, Pago.fecha_recibido >= desde)
+        .order_by(Pago.fecha_recibido.desc())
         .all()
     )
 
