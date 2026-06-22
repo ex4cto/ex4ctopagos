@@ -62,13 +62,8 @@ async def guardar_pago(
 
 
 async def _enviar_notificaciones(pago: Pago, cliente: Cliente, sesion: Session) -> None:
-    chat_ids: list[str] = cliente.telegram_chat_ids or []
-    if chat_ids:
-        resultados_tg = await tg_notificador.notificar_todos(chat_ids, pago, cliente.nombre_negocio)
-        for chat_id, resultado in resultados_tg.items():
-            _guardar_log(pago.id, "telegram", chat_id, resultado, sesion)
-        if any(r.exito for r in resultados_tg.values()):
-            pago.notificado_telegram = True
+    # Telegram no envía notificaciones automáticas — los empleados consultan via /verificar_pago.
+    # El dueño ve los pagos en su dashboard.
 
     correos: list[str] = cliente.correos_notificacion or []
     logger.debug("Notificacion correo — destinatarios configurados: %s", correos)
