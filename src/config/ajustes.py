@@ -20,7 +20,7 @@ class Ajustes(BaseSettings):
 
     # Dashboard operador
     operador_clave: str = ""
-    secret_key: str = "cambia-esto-en-produccion"
+    secret_key: str = ""
 
     # Seguridad
     webhook_token_expiracion_minutos: int = 5
@@ -28,7 +28,7 @@ class Ajustes(BaseSettings):
     intervalo_reintento_segundos: int = 30
 
     # App
-    ambiente: str = "desarrollo"
+    ambiente: str = "produccion"
     app_url: str = "https://ex4ctopagos-production.up.railway.app"
 
 
