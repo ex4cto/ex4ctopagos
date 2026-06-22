@@ -17,6 +17,7 @@
 - Nombres descriptivos completos, sin abreviaciones
 - Sin código comentado
 - Sin números mágicos
+- Sin hardcoding de credenciales, URLs, IDs o cualquier valor que cambie entre entornos — todo va en `.env` o en la BD
 - Logging estructurado, nunca `print()`
 - Excepciones propias tipadas
 - Nunca capturar y silenciar excepciones
