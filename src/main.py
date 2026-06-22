@@ -16,12 +16,26 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
-_CLAVE_SESION_DEFAULT = "cambia-esto-en-produccion"
+logger = logging.getLogger(__name__)
 
-if ajustes.ambiente == "produccion" and ajustes.secret_key == _CLAVE_SESION_DEFAULT:
+_SECRETS_REQUERIDOS: list[tuple[str, str]] = [
+    ("webhook_secret", "WEBHOOK_SECRET"),
+    ("telegram_bot_token", "TELEGRAM_BOT_TOKEN"),
+    ("telegram_webhook_secret", "TELEGRAM_WEBHOOK_SECRET"),
+    ("database_url", "DATABASE_URL"),
+    ("secret_key", "SECRET_KEY"),
+    ("operador_clave", "OPERADOR_CLAVE"),
+]
+
+_faltantes = [nombre_env for atributo, nombre_env in _SECRETS_REQUERIDOS if not getattr(ajustes, atributo)]
+if _faltantes:
     raise RuntimeError(
-        "SECRET_KEY no configurada con valor seguro — no se puede arrancar en produccion"
+        f"Variables de entorno requeridas no configuradas: {', '.join(_faltantes)}"
     )
+
+logger.warning(
+    "Rate limiter de login en memoria — no escalar a multiples instancias sin migrar a Redis"
+)
 
 aplicacion = FastAPI(
     title="Bot Comprobante de Pago",
