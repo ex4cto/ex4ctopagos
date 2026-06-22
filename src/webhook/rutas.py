@@ -39,7 +39,9 @@ async def recibir_email(
     correo: str = Query(default=""),
     sesion: Session = Depends(obtener_sesion),
 ) -> JSONResponse | dict[str, str]:
-    # Preferir header sobre query param — el header no queda en logs del proxy
+    # Forward Email no soporta headers personalizados — el secret llega por query param.
+    # Riesgo aceptado: el secret queda en logs de proxy. Mitigación: rotar el secret
+    # si se sospecha exposición, desde el panel de Forward Email.
     secret_efectivo = request.headers.get("X-Webhook-Secret", secret)
     try:
         validar_secret(secret_efectivo)
