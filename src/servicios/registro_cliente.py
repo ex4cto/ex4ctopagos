@@ -53,6 +53,17 @@ def responder_dashboard_cliente(chat_id: str, sesion: Session) -> str | None:
     return f"🔗 Dashboard de {html.escape(cliente.nombre_negocio)}:\n{url}"
 
 
+def _validar_chat_ids(texto: str) -> list[str] | None:
+    if texto.strip().lower() == "ninguno":
+        return []
+    partes = [p.strip() for p in texto.split(",") if p.strip()]
+    if not partes:
+        return None
+    if any(not _RE_CHAT_ID_VALIDO.match(p) for p in partes):
+        return None
+    return partes
+
+
 def _sesion_expirada(sesion: dict) -> bool:
     return time.time() - sesion["timestamp"] > _TIMEOUT_SESION_SEGUNDOS
 
@@ -130,10 +141,10 @@ async def procesar_mensaje_operador(
         return "¿Chat ID de Telegram del empleado? (solo números — escribe «ninguno» si no aplica)"
 
     if paso == "telegram_empleado":
-        texto_limpio = texto.strip().lower()
-        if texto_limpio != "ninguno" and not _RE_CHAT_ID_VALIDO.match(texto.strip()):
-            return "Chat ID inválido. Debe contener solo números. Intentá de nuevo o escribí «ninguno»."
-        estado["datos"]["telegram_chat_id_empleado"] = None if texto_limpio == "ninguno" else texto.strip()
+        chat_ids = _validar_chat_ids(texto)
+        if chat_ids is None:
+            return "Chat ID inválido. Usá solo números separados por coma. Intentá de nuevo o escribí «ninguno»."
+        estado["datos"]["telegram_chat_ids"] = chat_ids
         estado["paso"] = "correos_notificacion"
         return "¿Correos de notificación del empleado? (separados por coma, o escribe «ninguno»)"
 
@@ -144,8 +155,7 @@ async def procesar_mensaje_operador(
         alias = datos["alias"]
         correo_dedicado = f"{alias}@{ajustes.forward_email_dominio}"
 
-        chat_id_empleado = datos.get("telegram_chat_id_empleado")
-        telegram_chat_ids = [chat_id_empleado] if chat_id_empleado else []
+        telegram_chat_ids = datos.get("telegram_chat_ids", [])
 
         try:
             cliente = cliente_repo.crear(

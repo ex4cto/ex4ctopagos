@@ -170,7 +170,7 @@ class TestProcesarMensajeOperador:
         await procesar_mensaje_operador("449", "PEDRO GARCIA", _sesion_mock())
         await procesar_mensaje_operador("449", "ninguno", _sesion_mock())
         await procesar_mensaje_operador("449", "111222333", _sesion_mock())
-        assert _sesiones_registro["449"]["datos"]["telegram_chat_id_empleado"] == "111222333"
+        assert _sesiones_registro["449"]["datos"]["telegram_chat_ids"] == ["111222333"]
         assert _sesiones_registro["449"]["paso"] == "correos_notificacion"
 
     @pytest.mark.asyncio
@@ -239,6 +239,46 @@ class TestProcesarMensajeOperador:
             respuesta = await procesar_mensaje_operador("666", "ninguno", _sesion_mock())
         assert "Ya existe" in respuesta
         assert "666" not in _sesiones_registro
+
+    @pytest.mark.asyncio
+    async def test_telegram_empleado_multiples_ids_acepta(self) -> None:
+        await procesar_mensaje_operador("451", "/nuevo_cliente", _sesion_mock())
+        await procesar_mensaje_operador("451", "Tienda", _sesion_mock())
+        await procesar_mensaje_operador("451", "tienda", _sesion_mock())
+        await procesar_mensaje_operador("451", "PEDRO GARCIA", _sesion_mock())
+        await procesar_mensaje_operador("451", "ninguno", _sesion_mock())
+        await procesar_mensaje_operador("451", "111,222,333", _sesion_mock())
+        assert _sesiones_registro["451"]["datos"]["telegram_chat_ids"] == ["111", "222", "333"]
+        assert _sesiones_registro["451"]["paso"] == "correos_notificacion"
+
+    @pytest.mark.asyncio
+    async def test_telegram_empleado_un_id_invalido_rechaza(self) -> None:
+        await procesar_mensaje_operador("452", "/nuevo_cliente", _sesion_mock())
+        await procesar_mensaje_operador("452", "Tienda", _sesion_mock())
+        await procesar_mensaje_operador("452", "tienda", _sesion_mock())
+        await procesar_mensaje_operador("452", "PEDRO GARCIA", _sesion_mock())
+        await procesar_mensaje_operador("452", "ninguno", _sesion_mock())
+        respuesta = await procesar_mensaje_operador("452", "111,abc", _sesion_mock())
+        assert "inválido" in respuesta.lower()
+        assert _sesiones_registro["452"]["paso"] == "telegram_empleado"
+
+    @pytest.mark.asyncio
+    async def test_flujo_completo_multiples_empleados(self) -> None:
+        cliente = _cliente_mock()
+        with patch("src.servicios.registro_cliente.cliente_repo.crear", return_value=cliente) as mock_crear, \
+             patch("src.servicios.registro_cliente.alias_forward_email.crear_alias", new_callable=AsyncMock), \
+             patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.forward_email_dominio = "ex4cto.co"
+            mock_ajustes.app_url = "https://ex4ctopagos-production.up.railway.app"
+            await procesar_mensaje_operador("453", "/nuevo_cliente", _sesion_mock())
+            await procesar_mensaje_operador("453", "Tienda", _sesion_mock())
+            await procesar_mensaje_operador("453", "tienda", _sesion_mock())
+            await procesar_mensaje_operador("453", "PEDRO GARCIA", _sesion_mock())
+            await procesar_mensaje_operador("453", "ninguno", _sesion_mock())
+            await procesar_mensaje_operador("453", "111,222", _sesion_mock())
+            await procesar_mensaje_operador("453", "ninguno", _sesion_mock())
+        _, kwargs = mock_crear.call_args
+        assert kwargs["telegram_chat_ids"] == ["111", "222"]
 
     @pytest.mark.asyncio
     async def test_timeout_sesion_expirada(self) -> None:
