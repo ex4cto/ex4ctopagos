@@ -12,12 +12,14 @@ from sqlalchemy.orm import Session
 from src.config.ajustes import ajustes
 from src.config.base_datos import obtener_sesion
 from src.dashboard.jinja import templates
+from src.modelos.cliente import Cliente
 from src.repositorios import cliente_repo, log_repo, pago_repo
 from src.repositorios.pago_repo import MetricasCliente
 
 enrutador = APIRouter(prefix="/operador", tags=["operador"])
 
 _SESION_KEY = "operador_auth"
+_DIAS_AVISO_VENCIMIENTO: int = 5
 _MAX_INTENTOS_LOGIN = 5
 _VENTANA_LOGIN_SEGUNDOS = 300.0
 _intentos_login: dict[str, list[float]] = defaultdict(list)
@@ -45,6 +47,17 @@ def _verificar_clave(clave: str) -> bool:
     if not ajustes.operador_clave:
         return False
     return hmac.compare_digest(clave.encode(), ajustes.operador_clave.encode())
+
+
+def _estado_suscripcion(cliente: Cliente, ahora: datetime) -> str:
+    if not cliente.suscripcion_activa:
+        return "inactiva"
+    if not cliente.fecha_vencimiento_suscripcion:
+        return "inactiva"
+    dias = (cliente.fecha_vencimiento_suscripcion - ahora).days
+    if dias <= _DIAS_AVISO_VENCIMIENTO:
+        return "por_vencer"
+    return "activa"
 
 
 def _metricas_globales(filas: list[dict]) -> dict[str, Decimal | int]:
@@ -105,6 +118,18 @@ def rotar_token_cliente(
     return RedirectResponse("/operador/dashboard", status_code=303)
 
 
+@enrutador.post("/clientes/{id_cliente}/activar-suscripcion", response_model=None)
+def activar_suscripcion_cliente(
+    id_cliente: uuid.UUID,
+    request: Request,
+    sesion: Session = Depends(obtener_sesion),
+) -> RedirectResponse:
+    if not _autenticado(request):
+        return RedirectResponse("/operador/login", status_code=302)
+    cliente_repo.activar_suscripcion(id_cliente, sesion)
+    return RedirectResponse("/operador/dashboard", status_code=303)
+
+
 @enrutador.get("/dashboard", response_class=HTMLResponse, response_model=None)
 def dashboard_operador(
     request: Request,
@@ -116,7 +141,12 @@ def dashboard_operador(
     ahora = datetime.now(timezone.utc)
     clientes = cliente_repo.listar_activos(sesion)
     filas = [
-        {"cliente": c, "metricas": pago_repo.calcular_metricas(c.id, ahora, sesion)}
+        {
+            "cliente": c,
+            "metricas": pago_repo.calcular_metricas(c.id, ahora, sesion),
+            "estado_suscripcion": _estado_suscripcion(c, ahora),
+            "fecha_vencimiento": c.fecha_vencimiento_suscripcion,
+        }
         for c in clientes
     ]
     pagos_recientes = pago_repo.listar_recientes_global(sesion)

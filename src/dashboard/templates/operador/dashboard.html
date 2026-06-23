@@ -50,6 +50,8 @@
             <th class="text-end">Monto hoy</th>
             <th class="text-end">Pagos mes</th>
             <th class="text-end px-4">Monto mes</th>
+            <th class="text-center">Suscripción</th>
+            <th class="text-center">Vence</th>
             <th class="text-center">Dashboard</th>
             <th></th>
           </tr>
@@ -64,15 +66,39 @@
             <td class="text-end">{{ fila.metricas.pagos_mes }}</td>
             <td class="text-end fw-semibold px-4" style="color:#16a34a;">{{ fila.metricas.monto_mes | formato_peso }}</td>
             <td class="text-center px-3">
+              {% if fila.estado_suscripcion == "activa" %}
+                <span class="badge bg-success">Activa</span>
+              {% elif fila.estado_suscripcion == "por_vencer" %}
+                <span class="badge bg-warning text-dark">Por vencer</span>
+              {% else %}
+                <span class="badge bg-danger">Inactiva</span>
+              {% endif %}
+            </td>
+            <td class="text-center px-3" style="font-size:.83rem;">
+              {% if fila.fecha_vencimiento %}
+                {{ fila.fecha_vencimiento | formato_fecha_corta }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="text-center px-3">
               <a href="/dashboard/{{ fila.cliente.token_dashboard }}"
                  target="_blank"
                  class="btn btn-sm btn-outline-secondary">Ver</a>
             </td>
             <td class="px-3">
-              <form method="post" action="/operador/clientes/{{ fila.cliente.id }}/rotar-token"
-                    onsubmit="return confirm('¿Rotar el token de {{ fila.cliente.nombre_negocio }}? La URL actual del dashboard dejará de funcionar.')">
-                <button type="submit" class="btn btn-sm btn-outline-warning">Rotar token</button>
-              </form>
+              <div class="d-flex gap-2">
+                <form method="post" action="/operador/clientes/{{ fila.cliente.id }}/rotar-token"
+                      onsubmit="return confirm('¿Rotar el token de {{ fila.cliente.nombre_negocio }}? La URL actual del dashboard dejará de funcionar.')">
+                  <button type="submit" class="btn btn-sm btn-outline-warning">Rotar token</button>
+                </form>
+                {% if fila.estado_suscripcion == "inactiva" %}
+                <form method="post" action="/operador/clientes/{{ fila.cliente.id }}/activar-suscripcion"
+                      onsubmit="return confirm('¿Activar suscripción de {{ fila.cliente.nombre_negocio }}?')">
+                  <button type="submit" class="btn btn-sm btn-outline-success">Activar</button>
+                </form>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% endfor %}
