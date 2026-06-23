@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -6,6 +7,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 from src.modelos.cliente import Cliente
+
+logger = logging.getLogger(__name__)
 
 _DIAS_SUSCRIPCION: int = 30
 
@@ -106,6 +109,43 @@ def listar_suscripcion_vencida(sesion: Session) -> list[Cliente]:
         )
         .all()
     )
+
+
+def agregar_chat_id_empleado(
+    id_cliente: uuid.UUID,
+    chat_id: str,
+    sesion: Session,
+) -> Cliente | None:
+    cliente = obtener_por_id(id_cliente, sesion)
+    if not cliente:
+        return None
+    if chat_id in cliente.telegram_chat_ids:
+        logger.info("chat_id %s ya existe en cliente %s — sin cambios", chat_id, id_cliente)
+        return cliente
+    cliente.telegram_chat_ids = [*cliente.telegram_chat_ids, chat_id]
+    sesion.commit()
+    sesion.refresh(cliente)
+    return cliente
+
+
+def remover_chat_id_empleado(
+    chat_id: str,
+    sesion: Session,
+) -> Cliente | None:
+    cliente = (
+        sesion.query(Cliente)
+        .filter(
+            Cliente.activo.is_(True),
+            Cliente.telegram_chat_ids.op("@>")(cast([chat_id], JSONB)),
+        )
+        .first()
+    )
+    if not cliente:
+        return None
+    cliente.telegram_chat_ids = [x for x in cliente.telegram_chat_ids if x != chat_id]
+    sesion.commit()
+    sesion.refresh(cliente)
+    return cliente
 
 
 def crear(

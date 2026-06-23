@@ -8,11 +8,13 @@ from src.modelos.cliente import Cliente
 from src.repositorios.cliente_repo import (
     ErrorClienteDuplicado,
     activar_suscripcion,
+    agregar_chat_id_empleado,
     buscar_por_titular,
     crear,
     listar_por_vencer,
     listar_suscripcion_vencida,
     obtener_por_chat_id,
+    remover_chat_id_empleado,
     renovar_suscripcion,
 )
 
@@ -164,6 +166,53 @@ class TestListarPorVencer:
         sesion = MagicMock()
         sesion.query.return_value.filter.return_value.all.return_value = []
         assert listar_por_vencer(5, sesion) == []
+
+
+class TestAgregarChatIdEmpleado:
+    def test_agrega_exitosamente(self) -> None:
+        cliente = _cliente_activo(chat_ids=["111"])
+        sesion = _sesion_mock()
+        with patch("src.repositorios.cliente_repo.obtener_por_id", return_value=cliente):
+            resultado = agregar_chat_id_empleado(cliente.id, "222", sesion)
+        assert resultado is cliente
+        assert "222" in cliente.telegram_chat_ids
+        sesion.commit.assert_called_once()
+
+    def test_duplicado_no_duplica(self) -> None:
+        cliente = _cliente_activo(chat_ids=["111"])
+        sesion = _sesion_mock()
+        with patch("src.repositorios.cliente_repo.obtener_por_id", return_value=cliente):
+            agregar_chat_id_empleado(cliente.id, "111", sesion)
+        assert cliente.telegram_chat_ids.count("111") == 1
+        sesion.commit.assert_not_called()
+
+    def test_cliente_no_existe_retorna_none(self) -> None:
+        sesion = _sesion_mock()
+        with patch("src.repositorios.cliente_repo.obtener_por_id", return_value=None):
+            assert agregar_chat_id_empleado(uuid.uuid4(), "222", sesion) is None
+
+
+class TestRemoverChatIdEmpleado:
+    def test_remueve_exitosamente(self) -> None:
+        cliente = _cliente_activo(chat_ids=["111", "222"])
+        sesion = _sesion_mock()
+        sesion.query.return_value.filter.return_value.first.return_value = cliente
+        resultado = remover_chat_id_empleado("111", sesion)
+        assert resultado is cliente
+        assert "111" not in cliente.telegram_chat_ids
+        assert "222" in cliente.telegram_chat_ids
+        sesion.commit.assert_called_once()
+
+    def test_no_encontrado_retorna_none(self) -> None:
+        sesion = _sesion_mock()
+        sesion.query.return_value.filter.return_value.first.return_value = None
+        assert remover_chat_id_empleado("999", sesion) is None
+
+    def test_no_remueve_dueno(self) -> None:
+        cliente = _cliente_activo(chat_ids=[], chat_id_dueno="777")
+        sesion = _sesion_mock()
+        sesion.query.return_value.filter.return_value.first.return_value = None
+        assert remover_chat_id_empleado("777", sesion) is None
 
 
 class TestListarSuscripcionVencida:
