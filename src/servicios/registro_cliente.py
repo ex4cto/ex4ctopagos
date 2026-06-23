@@ -17,6 +17,8 @@ _TIMEOUT_SESION_SEGUNDOS = 600
 _COMANDO_NUEVO_CLIENTE = "/nuevo_cliente"
 _COMANDO_MI_DASHBOARD = "/mi_dashboard"
 _COMANDO_DASHBOARD = "/dashboard"
+_COMANDO_AGREGAR_EMPLEADO = "/agregar_empleado"
+_COMANDO_REMOVER_EMPLEADO = "/remover_empleado"
 _RE_ALIAS_VALIDO = re.compile(r"^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$")
 _RE_CHAT_ID_VALIDO = re.compile(r"^\d+$")
 
@@ -39,6 +41,14 @@ def es_comando_mi_dashboard(texto: str | None) -> bool:
 
 def es_comando_dashboard(texto: str | None) -> bool:
     return _detectar_comando(texto, _COMANDO_DASHBOARD)
+
+
+def es_comando_agregar_empleado(texto: str | None) -> bool:
+    return _detectar_comando(texto, _COMANDO_AGREGAR_EMPLEADO)
+
+
+def es_comando_remover_empleado(texto: str | None) -> bool:
+    return _detectar_comando(texto, _COMANDO_REMOVER_EMPLEADO)
 
 
 def responder_mi_dashboard() -> str:
@@ -105,6 +115,12 @@ async def procesar_mensaje_operador(
     if estado is None:
         if es_comando_mi_dashboard(texto):
             return responder_mi_dashboard()
+        if es_comando_agregar_empleado(texto):
+            _sesiones_registro[chat_id] = {"paso": "agregar_empleado_alias", "datos": {}, "timestamp": time.time()}
+            return "¿Alias del correo del cliente? (ej: panaderia)"
+        if es_comando_remover_empleado(texto):
+            _sesiones_registro[chat_id] = {"paso": "remover_empleado_chat_id", "datos": {}, "timestamp": time.time()}
+            return "¿Chat ID del empleado a remover?"
         if not es_comando_nuevo_cliente(texto):
             return None
         _sesiones_registro[chat_id] = {"paso": "nombre", "datos": {}, "timestamp": time.time()}
@@ -188,5 +204,37 @@ async def procesar_mensaje_operador(
 
         _limpiar_sesion(chat_id)
         return _formatear_confirmacion(datos["nombre_negocio"], correo_dedicado, cliente.token_dashboard)
+
+    if paso == "agregar_empleado_alias":
+        alias = texto.strip().lower()
+        dominio = ajustes.forward_email_dominio or "ex4cto.co"
+        correo = f"{alias}@{dominio}"
+        cliente = cliente_repo.obtener_por_correo_dedicado(correo, sesion)
+        if not cliente:
+            _limpiar_sesion(chat_id)
+            return f"❌ No se encontró ningún cliente con el alias {html.escape(alias)}."
+        estado["datos"]["id_cliente"] = cliente.id
+        estado["datos"]["nombre_negocio"] = cliente.nombre_negocio
+        estado["paso"] = "agregar_empleado_chat_id"
+        return "¿Chat ID del empleado a agregar?"
+
+    if paso == "agregar_empleado_chat_id":
+        if not _RE_CHAT_ID_VALIDO.match(texto.strip()):
+            return "Chat ID inválido. Debe contener solo números. Intentá de nuevo."
+        cliente_repo.agregar_chat_id_empleado(estado["datos"]["id_cliente"], texto.strip(), sesion)
+        nombre = html.escape(estado["datos"]["nombre_negocio"])
+        _limpiar_sesion(chat_id)
+        return f"✅ Empleado agregado a {nombre}."
+
+    if paso == "remover_empleado_chat_id":
+        if not _RE_CHAT_ID_VALIDO.match(texto.strip()):
+            return "Chat ID inválido. Debe contener solo números. Intentá de nuevo."
+        cliente = cliente_repo.remover_chat_id_empleado(texto.strip(), sesion)
+        if not cliente:
+            _limpiar_sesion(chat_id)
+            return "❌ No se encontró ningún empleado con ese Chat ID."
+        nombre = html.escape(cliente.nombre_negocio)
+        _limpiar_sesion(chat_id)
+        return f"✅ Empleado removido de {nombre}."
 
     return None

@@ -8,9 +8,11 @@ from src.repositorios.cliente_repo import ErrorClienteDuplicado
 from src.servicios.alias_forward_email import ErrorCrearAlias
 from src.servicios.registro_cliente import (
     _sesiones_registro,
+    es_comando_agregar_empleado,
     es_comando_dashboard,
     es_comando_mi_dashboard,
     es_comando_nuevo_cliente,
+    es_comando_remover_empleado,
     procesar_mensaje_operador,
     responder_dashboard_cliente,
     responder_mi_dashboard,
@@ -44,6 +46,15 @@ class TestComandosDashboard:
 
     def test_dashboard_detecta_exacto(self) -> None:
         assert es_comando_dashboard("/dashboard") is True
+
+    def test_agregar_empleado_detecta_exacto(self) -> None:
+        assert es_comando_agregar_empleado("/agregar_empleado") is True
+
+    def test_agregar_empleado_detecta_con_sufijo_bot(self) -> None:
+        assert es_comando_agregar_empleado("/agregar_empleado@mibot") is True
+
+    def test_remover_empleado_detecta_exacto(self) -> None:
+        assert es_comando_remover_empleado("/remover_empleado") is True
 
     def test_dashboard_detecta_con_sufijo_bot(self) -> None:
         assert es_comando_dashboard("/dashboard@mibot") is True
@@ -279,6 +290,83 @@ class TestProcesarMensajeOperador:
             await procesar_mensaje_operador("453", "ninguno", _sesion_mock())
         _, kwargs = mock_crear.call_args
         assert kwargs["telegram_chat_ids"] == ["111", "222"]
+
+    @pytest.mark.asyncio
+    async def test_agregar_empleado_inicia_flujo(self) -> None:
+        respuesta = await procesar_mensaje_operador("460", "/agregar_empleado", _sesion_mock())
+        assert respuesta is not None
+        assert "alias" in respuesta.lower()
+        assert _sesiones_registro["460"]["paso"] == "agregar_empleado_alias"
+
+    @pytest.mark.asyncio
+    async def test_agregar_empleado_alias_no_encontrado(self) -> None:
+        with patch("src.servicios.registro_cliente.cliente_repo.obtener_por_correo_dedicado", return_value=None), \
+             patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.forward_email_dominio = "ex4cto.co"
+            await procesar_mensaje_operador("461", "/agregar_empleado", _sesion_mock())
+            respuesta = await procesar_mensaje_operador("461", "noexiste", _sesion_mock())
+        assert "❌" in respuesta
+        assert "461" not in _sesiones_registro
+
+    @pytest.mark.asyncio
+    async def test_agregar_empleado_chat_id_invalido_rechaza(self) -> None:
+        cliente = _cliente_mock()
+        cliente.nombre_negocio = "Tienda"
+        with patch("src.servicios.registro_cliente.cliente_repo.obtener_por_correo_dedicado", return_value=cliente), \
+             patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.forward_email_dominio = "ex4cto.co"
+            await procesar_mensaje_operador("462", "/agregar_empleado", _sesion_mock())
+            await procesar_mensaje_operador("462", "panaderia", _sesion_mock())
+            respuesta = await procesar_mensaje_operador("462", "abc", _sesion_mock())
+        assert "inválido" in respuesta.lower()
+        assert _sesiones_registro["462"]["paso"] == "agregar_empleado_chat_id"
+
+    @pytest.mark.asyncio
+    async def test_agregar_empleado_flujo_completo(self) -> None:
+        cliente = _cliente_mock()
+        cliente.nombre_negocio = "Tienda"
+        with patch("src.servicios.registro_cliente.cliente_repo.obtener_por_correo_dedicado", return_value=cliente), \
+             patch("src.servicios.registro_cliente.cliente_repo.agregar_chat_id_empleado") as mock_agregar, \
+             patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.forward_email_dominio = "ex4cto.co"
+            await procesar_mensaje_operador("463", "/agregar_empleado", _sesion_mock())
+            await procesar_mensaje_operador("463", "panaderia", _sesion_mock())
+            respuesta = await procesar_mensaje_operador("463", "999888777", _sesion_mock())
+        mock_agregar.assert_called_once()
+        assert "✅" in respuesta
+        assert "463" not in _sesiones_registro
+
+    @pytest.mark.asyncio
+    async def test_remover_empleado_inicia_flujo(self) -> None:
+        respuesta = await procesar_mensaje_operador("470", "/remover_empleado", _sesion_mock())
+        assert respuesta is not None
+        assert "chat id" in respuesta.lower()
+        assert _sesiones_registro["470"]["paso"] == "remover_empleado_chat_id"
+
+    @pytest.mark.asyncio
+    async def test_remover_empleado_chat_id_invalido_rechaza(self) -> None:
+        await procesar_mensaje_operador("471", "/remover_empleado", _sesion_mock())
+        respuesta = await procesar_mensaje_operador("471", "abc", _sesion_mock())
+        assert "inválido" in respuesta.lower()
+        assert _sesiones_registro["471"]["paso"] == "remover_empleado_chat_id"
+
+    @pytest.mark.asyncio
+    async def test_remover_empleado_no_encontrado(self) -> None:
+        with patch("src.servicios.registro_cliente.cliente_repo.remover_chat_id_empleado", return_value=None):
+            await procesar_mensaje_operador("472", "/remover_empleado", _sesion_mock())
+            respuesta = await procesar_mensaje_operador("472", "999000111", _sesion_mock())
+        assert "❌" in respuesta
+        assert "472" not in _sesiones_registro
+
+    @pytest.mark.asyncio
+    async def test_remover_empleado_flujo_completo(self) -> None:
+        cliente = _cliente_mock()
+        cliente.nombre_negocio = "Tienda"
+        with patch("src.servicios.registro_cliente.cliente_repo.remover_chat_id_empleado", return_value=cliente):
+            await procesar_mensaje_operador("473", "/remover_empleado", _sesion_mock())
+            respuesta = await procesar_mensaje_operador("473", "999888777", _sesion_mock())
+        assert "✅" in respuesta
+        assert "473" not in _sesiones_registro
 
     @pytest.mark.asyncio
     async def test_timeout_sesion_expirada(self) -> None:
