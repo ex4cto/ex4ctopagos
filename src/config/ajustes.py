@@ -27,6 +27,12 @@ class Ajustes(BaseSettings):
     max_reintentos_notificacion: int = 3
     intervalo_reintento_segundos: int = 30
 
+    # Operador
+    operador_telegram_chat_id: str = ""
+
+    # Forward Email — gestión de aliases
+    forward_email_dominio: str = ""
+
     # App
     ambiente: str = "produccion"
     app_url: str = "https://ex4ctopagos-production.up.railway.app"

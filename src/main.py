@@ -37,6 +37,12 @@ logger.warning(
     "Rate limiter de login en memoria — no escalar a multiples instancias sin migrar a Redis"
 )
 
+if not ajustes.operador_telegram_chat_id:
+    logger.warning("OPERADOR_TELEGRAM_CHAT_ID no configurado — comando /nuevo_cliente deshabilitado")
+
+if not ajustes.forward_email_dominio:
+    logger.warning("FORWARD_EMAIL_DOMINIO no configurado — creacion de aliases deshabilitada")
+
 aplicacion = FastAPI(
     title="Bot Comprobante de Pago",
     version="1.0.0",
