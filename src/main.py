@@ -1,4 +1,7 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
@@ -8,6 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from src.config.ajustes import ajustes
 from src.dashboard.rutas_negocio import enrutador as enrutador_dashboard
 from src.dashboard.rutas_operador import enrutador as enrutador_operador
+from src.servicios.scheduler import tarea_suscripciones_diaria
 from src.telegram.rutas import enrutador as enrutador_telegram
 from src.webhook.rutas import enrutador as enrutador_webhook
 
@@ -17,6 +21,15 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    tarea = asyncio.create_task(tarea_suscripciones_diaria())
+    try:
+        yield
+    finally:
+        tarea.cancel()
+
 
 _SECRETS_REQUERIDOS: list[tuple[str, str]] = [
     ("webhook_secret", "WEBHOOK_SECRET"),
@@ -51,6 +64,7 @@ aplicacion = FastAPI(
     version="1.0.0",
     docs_url="/docs" if ajustes.ambiente == "desarrollo" else None,
     redoc_url=None,
+    lifespan=_lifespan,
 )
 
 aplicacion.add_middleware(
