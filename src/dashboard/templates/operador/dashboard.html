@@ -87,9 +87,7 @@
             <th class="px-4 py-3">Fecha</th>
             <th>Cliente</th>
             <th>Remitente</th>
-            <th class="text-end">Monto</th>
-            <th class="text-center">TG</th>
-            <th class="text-center px-4">Email</th>
+            <th class="text-end px-4">Monto</th>
           </tr>
         </thead>
         <tbody>
@@ -98,21 +96,7 @@
             <td class="px-4" style="font-size:.83rem;">{{ pago.fecha_pago | formato_fecha }}</td>
             <td style="font-size:.83rem;">{{ pago.cliente.nombre_negocio }}</td>
             <td style="font-size:.83rem;">{{ pago.remitente }}</td>
-            <td class="text-end fw-semibold" style="color:#16a34a;">{{ pago.monto | formato_peso }}</td>
-            <td class="text-center">
-              {% if pago.notificado_telegram %}
-                <span class="badge badge-ok">✓</span>
-              {% else %}
-                <span class="badge badge-fail">✗</span>
-              {% endif %}
-            </td>
-            <td class="text-center px-4">
-              {% if pago.notificado_correo %}
-                <span class="badge badge-ok">✓</span>
-              {% else %}
-                <span class="badge badge-fail">✗</span>
-              {% endif %}
-            </td>
+            <td class="text-end fw-semibold px-4" style="color:#16a34a;">{{ pago.monto | formato_peso }}</td>
           </tr>
           {% endfor %}
         </tbody>

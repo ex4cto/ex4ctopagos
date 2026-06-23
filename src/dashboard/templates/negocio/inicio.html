@@ -54,9 +54,7 @@
           <tr class="table-light">
             <th class="ps-4">Fecha</th>
             <th>Monto</th>
-            <th>Remitente</th>
-            <th>Telegram</th>
-            <th class="pe-4">Correo</th>
+            <th class="pe-4">Remitente</th>
           </tr>
         </thead>
         <tbody>
@@ -64,21 +62,7 @@
           <tr>
             <td class="ps-4 text-nowrap">{{ pago.fecha_pago | formato_fecha }}</td>
             <td class="fw-semibold text-success">{{ pago.monto | formato_peso }}</td>
-            <td>{{ pago.remitente }}</td>
-            <td>
-              {% if pago.notificado_telegram %}
-                <span class="badge badge-ok rounded-pill px-2 py-1">Enviado</span>
-              {% else %}
-                <span class="badge badge-fail rounded-pill px-2 py-1">Pendiente</span>
-              {% endif %}
-            </td>
-            <td class="pe-4">
-              {% if pago.notificado_correo %}
-                <span class="badge badge-ok rounded-pill px-2 py-1">Enviado</span>
-              {% else %}
-                <span class="badge badge-fail rounded-pill px-2 py-1">Pendiente</span>
-              {% endif %}
-            </td>
+            <td class="pe-4">{{ pago.remitente }}</td>
           </tr>
           {% endfor %}
         </tbody>
