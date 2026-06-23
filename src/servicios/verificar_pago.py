@@ -5,10 +5,12 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from src.config.ajustes import ajustes
 from src.modelos.pago import Pago
 from src.notificador import correo as correo_notificador
 from src.notificador.telegram import enviar_mensaje
 from src.repositorios import cliente_repo, pago_repo
+from src.servicios import registro_cliente
 from src.telegram.schemas import ActualizacionTelegram
 
 logger = logging.getLogger(__name__)
@@ -50,10 +52,21 @@ async def procesar_actualizacion(
     sesion: Session,
 ) -> None:
     mensaje = actualizacion.message
-    if not mensaje or not _es_comando_verificar_pago(mensaje.texto):
+    if not mensaje:
         return
 
     chat_id = str(mensaje.chat.id)
+
+    if ajustes.operador_telegram_chat_id and chat_id == ajustes.operador_telegram_chat_id:
+        respuesta = await registro_cliente.procesar_mensaje_operador(
+            chat_id, mensaje.texto or "", sesion
+        )
+        if respuesta:
+            await enviar_mensaje(chat_id, respuesta)
+        return
+
+    if not _es_comando_verificar_pago(mensaje.texto):
+        return
     ahora = datetime.now(timezone.utc)
 
     cliente = cliente_repo.obtener_por_chat_id(chat_id, sesion)

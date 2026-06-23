@@ -95,10 +95,39 @@ class TestProcesarActualizacion:
         )
 
     @pytest.mark.asyncio
+    async def test_operador_enrutado_a_registro(self) -> None:
+        actualizacion = self._crear_actualizacion("/nuevo_cliente", chat_id=999999999)
+        sesion = MagicMock()
+        with patch("src.servicios.verificar_pago.ajustes") as mock_ajustes, \
+             patch("src.servicios.verificar_pago.registro_cliente") as mock_registro, \
+             patch("src.servicios.verificar_pago.enviar_mensaje", new_callable=AsyncMock) as mock_enviar, \
+             patch("src.servicios.verificar_pago.cliente_repo") as mock_repo:
+            mock_ajustes.operador_telegram_chat_id = "999999999"
+            mock_registro.procesar_mensaje_operador = AsyncMock(return_value="¿Cuál es el nombre?")
+            await procesar_actualizacion(actualizacion, sesion)
+            mock_registro.procesar_mensaje_operador.assert_called_once()
+            mock_enviar.assert_called_once_with("999999999", "¿Cuál es el nombre?")
+            mock_repo.obtener_por_chat_id.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_operador_ignora_enrutamiento(self) -> None:
+        actualizacion = self._crear_actualizacion("/nuevo_cliente", chat_id=-123456789)
+        sesion = MagicMock()
+        with patch("src.servicios.verificar_pago.ajustes") as mock_ajustes, \
+             patch("src.servicios.verificar_pago.registro_cliente") as mock_registro, \
+             patch("src.servicios.verificar_pago.cliente_repo") as mock_repo:
+            mock_ajustes.operador_telegram_chat_id = ""
+            mock_repo.obtener_por_chat_id.return_value = None
+            await procesar_actualizacion(actualizacion, sesion)
+            mock_registro.procesar_mensaje_operador.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_ignora_mensaje_sin_comando(self) -> None:
         actualizacion = self._crear_actualizacion("hola")
         sesion = MagicMock()
-        with patch("src.servicios.verificar_pago.enviar_mensaje") as mock_enviar:
+        with patch("src.servicios.verificar_pago.ajustes") as mock_ajustes, \
+             patch("src.servicios.verificar_pago.enviar_mensaje") as mock_enviar:
+            mock_ajustes.operador_telegram_chat_id = ""
             await procesar_actualizacion(actualizacion, sesion)
             mock_enviar.assert_not_called()
 
