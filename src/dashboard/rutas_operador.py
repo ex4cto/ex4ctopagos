@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from src.config.ajustes import ajustes
 from src.config.base_datos import obtener_sesion
 from src.dashboard.jinja import templates
-from src.repositorios import cliente_repo, pago_repo
+from src.repositorios import cliente_repo, log_repo, pago_repo
 from src.repositorios.pago_repo import MetricasCliente
 
 enrutador = APIRouter(prefix="/operador", tags=["operador"])
@@ -107,6 +107,7 @@ def dashboard_operador(
         for c in clientes
     ]
     pagos_recientes = pago_repo.listar_recientes_global(sesion)
+    fallos_recientes = log_repo.listar_fallos_recientes(sesion)
 
     return templates.TemplateResponse(
         "operador/dashboard.html",
@@ -114,6 +115,7 @@ def dashboard_operador(
             "request": request,
             "filas": filas,
             "pagos_recientes": pagos_recientes,
+            "fallos_recientes": fallos_recientes,
             "globales": _metricas_globales(filas),
             "total_clientes": len(clientes),
         },

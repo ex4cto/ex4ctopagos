@@ -108,6 +108,44 @@
   </div>
 </div>
 
+{# Fallos de notificación #}
+<div class="card mt-4">
+  <div class="card-body p-0">
+    <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+      <h6 class="mb-0 fw-semibold">Fallos de notificación</h6>
+      <span class="text-muted" style="font-size:.82rem;">Últimos {{ fallos_recientes | length }}</span>
+    </div>
+    {% if fallos_recientes %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th class="px-4 py-3">Fecha</th>
+            <th>Canal</th>
+            <th>Destinatario</th>
+            <th class="text-center">Intentos</th>
+            <th class="px-4">Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fallo in fallos_recientes %}
+          <tr>
+            <td class="px-4" style="font-size:.83rem;">{{ fallo.fecha | formato_fecha }}</td>
+            <td style="font-size:.83rem;">{{ fallo.canal }}</td>
+            <td style="font-size:.83rem;">{{ fallo.destinatario }}</td>
+            <td class="text-center" style="font-size:.83rem;">{{ fallo.intentos }}</td>
+            <td class="px-4 text-danger" style="font-size:.80rem; max-width:320px; word-break:break-word;">{{ fallo.error or "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="sin-pagos py-4">Sin fallos registrados.</div>
+    {% endif %}
+  </div>
+</div>
+
 {# Cerrar sesión #}
 <div class="text-end mt-3">
   <form method="post" action="/operador/logout" class="d-inline">
