@@ -93,6 +93,18 @@ class TestObtenerPorChatId:
         resultado = obtener_por_chat_id("777", sesion)
         assert resultado is cliente
 
+    def test_encuentra_por_telegram_chat_ids_empleado(self) -> None:
+        cliente = _cliente_activo(chat_ids=["888"])
+        sesion = MagicMock()
+        sesion.query.return_value.filter.return_value.first.return_value = cliente
+        resultado = obtener_por_chat_id("888", sesion)
+        assert resultado is cliente
+
+    def test_retorna_none_si_no_encuentra(self) -> None:
+        sesion = MagicMock()
+        sesion.query.return_value.filter.return_value.first.return_value = None
+        assert obtener_por_chat_id("999", sesion) is None
+
 
 class TestBuscarPorTitular:
     def test_encuentra_titular_existente(self) -> None:
