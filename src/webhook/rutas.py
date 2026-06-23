@@ -4,9 +4,11 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from src.config.ajustes import ajustes
 from src.config.base_datos import obtener_sesion
 from src.repositorios import cliente_repo, pago_repo
-from src.servicios.procesar_pago import guardar_pago, notificar_background
+from src.servicios import suscripcion
+from src.servicios.procesar_pago import guardar_pago, notificar_background, parsear_pago_email
 from src.webhook.schemas import PayloadEmail
 from src.webhook.validador import ErrorSecretInvalido, validar_secret
 
@@ -63,6 +65,21 @@ async def recibir_email(
 
     if not message_id:
         logger.warning("Email sin messageId — ignorado")
+        return _RESPUESTA_OK
+
+    alias_suscripciones = f"{ajustes.alias_suscripciones}@{ajustes.forward_email_dominio}"
+    if ajustes.forward_email_dominio and correo == alias_suscripciones:
+        payload_sub = PayloadEmail(
+            message_id=message_id,
+            remitente_email=remitente_email,
+            correo_destinatario=correo,
+            asunto=datos.get(_CLAVE_SUBJECT, ""),
+            cuerpo_html=datos.get(_CLAVE_HTML, "") or "",
+            cuerpo_texto=datos.get(_CLAVE_TEXT, "") or "",
+        )
+        pago_extraido = parsear_pago_email(payload_sub)
+        if pago_extraido:
+            background_tasks.add_task(suscripcion.procesar_pago_suscripcion, pago_extraido, sesion)
         return _RESPUESTA_OK
 
     if pago_repo.existe_token(message_id, sesion):

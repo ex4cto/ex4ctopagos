@@ -9,16 +9,12 @@ from src.parser.base import ErrorParseoBanco, detectar_banco
 from src.parser.fabrica import obtener_parser
 from src.repositorios import pago_repo
 from src.repositorios.pago_repo import PagoCrear
-from src.webhook.schemas import PayloadEmail
+from src.webhook.schemas import PagoExtraido, PayloadEmail
 
 logger = logging.getLogger(__name__)
 
 
-async def guardar_pago(
-    payload: PayloadEmail,
-    cliente: Cliente,
-    sesion: Session,
-) -> Pago | None:
+def parsear_pago_email(payload: PayloadEmail) -> PagoExtraido | None:
     banco = detectar_banco(payload.remitente_email)
     if not banco:
         logger.warning(
@@ -26,14 +22,20 @@ async def guardar_pago(
             payload.remitente_email,
         )
         return None
-
     try:
-        pago_extraido = obtener_parser(banco).parsear(
-            payload.cuerpo_html,
-            payload.cuerpo_texto,
-        )
+        return obtener_parser(banco).parsear(payload.cuerpo_html, payload.cuerpo_texto)
     except ErrorParseoBanco as error:
         logger.error("Error parseando email de %s: %s", banco, error)
+        return None
+
+
+async def guardar_pago(
+    payload: PayloadEmail,
+    cliente: Cliente,
+    sesion: Session,
+) -> Pago | None:
+    pago_extraido = parsear_pago_email(payload)
+    if not pago_extraido:
         return None
 
     pago = pago_repo.crear(
