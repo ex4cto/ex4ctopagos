@@ -37,6 +37,10 @@ ruta → servicio → repositorio → modelo
 - Config de clientes en tabla BD
 - `requirements.txt` con versiones fijas
 
+## Verificación (regla crítica)
+
+Nunca asumir ni suponer. Antes de usar cualquier función, módulo, patrón o configuración del proyecto, leer el archivo correspondiente y verificar que existe y funciona como se espera. Si hay duda, leer primero — nunca inventar.
+
 ## Commits
 
 Un commit = un cambio lógico completo y autocontenido. Nunca mezclar features, fixes y refactors en el mismo commit. Cada commit debe dejar el proyecto en estado funcional y los tests en verde.
