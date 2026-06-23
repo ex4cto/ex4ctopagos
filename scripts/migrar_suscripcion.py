@@ -2,6 +2,7 @@
 
 Uso: python scripts/migrar_suscripcion.py
 """
+import logging
 import sys
 
 sys.path.insert(0, ".")
@@ -10,6 +11,9 @@ from sqlalchemy import text
 
 from src.config.ajustes import ajustes
 from src.config.base_datos import SesionLocal
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 _MIGRACIONES: list[str] = [
     "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telegram_chat_id_dueno VARCHAR(50)",
@@ -24,12 +28,12 @@ def ejecutar_migracion() -> None:
     try:
         for sentencia in _MIGRACIONES:
             sesion.execute(text(sentencia))
-            print(f"OK: {sentencia}")
+            logger.info("OK: %s", sentencia)
         sesion.commit()
-        print("\nMigracion completada.")
+        logger.info("Migracion completada.")
     except Exception as exc:
         sesion.rollback()
-        print(f"Error en migracion: {exc}")
+        logger.exception("Error en migracion: %s", exc)
         raise
     finally:
         sesion.close()
