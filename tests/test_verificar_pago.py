@@ -152,7 +152,7 @@ class TestProcesarActualizacion:
             )
 
     @pytest.mark.asyncio
-    async def test_envia_correo_resumen_sin_pagos(self) -> None:
+    async def test_no_envia_correo_si_sin_pagos_recientes(self) -> None:
         actualizacion = self._crear_actualizacion("/verificar_pago")
         sesion = MagicMock()
         cliente_mock = MagicMock()
@@ -166,9 +166,7 @@ class TestProcesarActualizacion:
             mock_cliente_repo.obtener_por_chat_id.return_value = cliente_mock
             mock_pago_repo.listar_ultimos_minutos.return_value = []
             await procesar_actualizacion(actualizacion, sesion)
-            mock_correo.notificar_resumen.assert_called_once_with(
-                ["empleado@negocio.com"], [], "Negocio Test", 5
-            )
+            mock_correo.notificar_resumen.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_no_envia_correo_si_cliente_sin_correos(self) -> None:

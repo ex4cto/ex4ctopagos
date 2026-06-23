@@ -67,7 +67,7 @@ async def procesar_actualizacion(
     await enviar_mensaje(chat_id, respuesta)
 
     correos: list[str] = cliente.correos_notificacion or []
-    if correos:
+    if correos and pagos:
         await correo_notificador.notificar_resumen(
             correos, pagos, cliente.nombre_negocio, _VENTANA_MINUTOS
         )
