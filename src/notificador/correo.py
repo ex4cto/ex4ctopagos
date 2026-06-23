@@ -153,14 +153,13 @@ def formatear_cuerpo_html_resumen(
             f"<tr>"
             f"<td class='monto'>{_formatear_monto(p.monto)}</td>"
             f"<td>{html.escape(p.remitente)}</td>"
-            f"<td>{html.escape(p.banco_origen)}</td>"
             f"<td>{p.fecha_pago.strftime('%H:%M')}</td>"
             f"</tr>"
             for p in pagos
         )
         cuerpo_tabla = (
             "<table>"
-            "<tr><th>Monto</th><th>De</th><th>Banco</th><th>Hora</th></tr>"
+            "<tr><th>Monto</th><th>De</th><th>Hora</th></tr>"
             f"{filas}"
             "</table>"
         )
