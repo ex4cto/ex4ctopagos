@@ -1,4 +1,5 @@
 import hmac
+import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -90,6 +91,18 @@ def post_login(
 def logout(request: Request) -> RedirectResponse:
     request.session.clear()
     return RedirectResponse("/operador/login", status_code=302)
+
+
+@enrutador.post("/clientes/{id_cliente}/rotar-token", response_model=None)
+def rotar_token_cliente(
+    id_cliente: uuid.UUID,
+    request: Request,
+    sesion: Session = Depends(obtener_sesion),
+) -> RedirectResponse:
+    if not _autenticado(request):
+        return RedirectResponse("/operador/login", status_code=302)
+    cliente_repo.rotar_token(id_cliente, sesion)
+    return RedirectResponse("/operador/dashboard", status_code=303)
 
 
 @enrutador.get("/dashboard", response_class=HTMLResponse, response_model=None)

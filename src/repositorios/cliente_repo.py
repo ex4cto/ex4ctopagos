@@ -38,6 +38,16 @@ def listar_activos(sesion: Session) -> list[Cliente]:
     return sesion.query(Cliente).filter(Cliente.activo.is_(True)).order_by(Cliente.fecha_creacion.desc()).all()
 
 
+def rotar_token(id_cliente: uuid.UUID, sesion: Session) -> Cliente | None:
+    cliente = obtener_por_id(id_cliente, sesion)
+    if not cliente:
+        return None
+    cliente.token_dashboard = uuid.uuid4()
+    sesion.commit()
+    sesion.refresh(cliente)
+    return cliente
+
+
 def crear(
     nombre_negocio: str,
     correo_dedicado: str,
