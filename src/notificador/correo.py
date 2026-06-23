@@ -13,6 +13,37 @@ logger = logging.getLogger(__name__)
 
 _URL_FORWARDEMAIL = "https://api.forwardemail.net/v1/emails"
 
+_PLANTILLA_HTML_RESUMEN = """\
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {{ font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }}
+    .tarjeta {{ background: #fff; border-radius: 8px; max-width: 520px; margin: auto;
+                padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }}
+    h2 {{ color: #1a1a1a; margin: 0 0 8px; font-size: 20px; }}
+    .subtitulo {{ color: #888; font-size: 13px; margin: 0 0 24px; }}
+    table {{ width: 100%; border-collapse: collapse; }}
+    th {{ text-align: left; padding: 8px 0; border-bottom: 2px solid #e5e7eb;
+          color: #888; font-size: 12px; text-transform: uppercase; }}
+    td {{ padding: 10px 0; border-bottom: 1px solid #f0f0f0; color: #444; font-size: 14px; }}
+    .monto {{ font-weight: bold; color: #2e7d32; }}
+    .vacio {{ color: #888; font-size: 14px; padding: 16px 0; }}
+    .pie {{ margin-top: 24px; font-size: 12px; color: #aaa; text-align: center; }}
+  </style>
+</head>
+<body>
+  <div class="tarjeta">
+    <h2>{titulo}</h2>
+    <p class="subtitulo">{subtitulo}</p>
+    {cuerpo_tabla}
+    <p class="pie">Consulta via /verificar_pago — Bot de Comprobante de Pago</p>
+  </div>
+</body>
+</html>"""
+
 _PLANTILLA_HTML = """\
 <!DOCTYPE html>
 <html lang="es">
@@ -91,6 +122,63 @@ async def notificar_todos(
 ) -> dict[str, ResultadoEnvio]:
     asunto = formatear_asunto(pago)
     cuerpo_html = formatear_cuerpo_html(pago, nombre_negocio)
+    resultados: dict[str, ResultadoEnvio] = {}
+    for destino in correos:
+        resultados[destino] = await ejecutar_con_reintentos(
+            fn=partial(enviar_correo, destino, asunto, cuerpo_html),
+            max_intentos=ajustes.max_reintentos_notificacion,
+            intervalo_segundos=ajustes.intervalo_reintento_segundos,
+        )
+    return resultados
+
+
+def formatear_asunto_resumen(pagos: list[Pago], nombre_negocio: str) -> str:
+    if not pagos:
+        return f"{nombre_negocio} — Sin pagos en los últimos minutos"
+    total = sum(p.monto for p in pagos)
+    cantidad = len(pagos)
+    return f"{nombre_negocio} — {cantidad} pago{'s' if cantidad != 1 else ''} por {_formatear_monto(total)}"
+
+
+def formatear_cuerpo_html_resumen(
+    pagos: list[Pago],
+    nombre_negocio: str,
+    ventana_minutos: int,
+) -> str:
+    subtitulo = f"Resumen de los últimos {ventana_minutos} minutos"
+    if not pagos:
+        cuerpo_tabla = f'<p class="vacio">Sin pagos recibidos en los últimos {ventana_minutos} minutos.</p>'
+    else:
+        filas = "".join(
+            f"<tr>"
+            f"<td class='monto'>{_formatear_monto(p.monto)}</td>"
+            f"<td>{html.escape(p.remitente)}</td>"
+            f"<td>{html.escape(p.banco_origen)}</td>"
+            f"<td>{p.fecha_pago.strftime('%H:%M')}</td>"
+            f"</tr>"
+            for p in pagos
+        )
+        cuerpo_tabla = (
+            "<table>"
+            "<tr><th>Monto</th><th>De</th><th>Banco</th><th>Hora</th></tr>"
+            f"{filas}"
+            "</table>"
+        )
+    return _PLANTILLA_HTML_RESUMEN.format(
+        titulo=html.escape(nombre_negocio),
+        subtitulo=subtitulo,
+        cuerpo_tabla=cuerpo_tabla,
+    )
+
+
+async def notificar_resumen(
+    correos: list[str],
+    pagos: list[Pago],
+    nombre_negocio: str,
+    ventana_minutos: int,
+) -> dict[str, ResultadoEnvio]:
+    asunto = formatear_asunto_resumen(pagos, nombre_negocio)
+    cuerpo_html = formatear_cuerpo_html_resumen(pagos, nombre_negocio, ventana_minutos)
     resultados: dict[str, ResultadoEnvio] = {}
     for destino in correos:
         resultados[destino] = await ejecutar_con_reintentos(
