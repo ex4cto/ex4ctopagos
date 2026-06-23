@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from src.modelos.pago import Pago
+from src.notificador import correo as correo_notificador
 from src.notificador.telegram import enviar_mensaje
 from src.repositorios import cliente_repo, pago_repo
 from src.telegram.schemas import ActualizacionTelegram
@@ -64,6 +65,13 @@ async def procesar_actualizacion(
     respuesta = _formatear_respuesta(pagos, ahora)
 
     await enviar_mensaje(chat_id, respuesta)
+
+    correos: list[str] = cliente.correos_notificacion or []
+    if correos:
+        await correo_notificador.notificar_resumen(
+            correos, pagos, cliente.nombre_negocio, _VENTANA_MINUTOS
+        )
+
     logger.info(
         "Comando /verificar_pago respondido — cliente: %s, pagos: %d",
         cliente.nombre_negocio,
