@@ -126,6 +126,14 @@ async def procesar_mensaje_operador(
         if texto_limpio != "ninguno" and not _RE_CHAT_ID_VALIDO.match(texto.strip()):
             return "Chat ID inválido. Debe contener solo números. Intentá de nuevo o escribí «ninguno»."
         estado["datos"]["telegram_chat_id_dueno"] = None if texto_limpio == "ninguno" else texto.strip()
+        estado["paso"] = "telegram_empleado"
+        return "¿Chat ID de Telegram del empleado? (solo números — escribe «ninguno» si no aplica)"
+
+    if paso == "telegram_empleado":
+        texto_limpio = texto.strip().lower()
+        if texto_limpio != "ninguno" and not _RE_CHAT_ID_VALIDO.match(texto.strip()):
+            return "Chat ID inválido. Debe contener solo números. Intentá de nuevo o escribí «ninguno»."
+        estado["datos"]["telegram_chat_id_empleado"] = None if texto_limpio == "ninguno" else texto.strip()
         estado["paso"] = "correos_notificacion"
         return "¿Correos de notificación del empleado? (separados por coma, o escribe «ninguno»)"
 
@@ -136,11 +144,14 @@ async def procesar_mensaje_operador(
         alias = datos["alias"]
         correo_dedicado = f"{alias}@{ajustes.forward_email_dominio}"
 
+        chat_id_empleado = datos.get("telegram_chat_id_empleado")
+        telegram_chat_ids = [chat_id_empleado] if chat_id_empleado else []
+
         try:
             cliente = cliente_repo.crear(
                 nombre_negocio=datos["nombre_negocio"],
                 correo_dedicado=correo_dedicado,
-                telegram_chat_ids=[],
+                telegram_chat_ids=telegram_chat_ids,
                 correos_notificacion=correos,
                 sesion=sesion,
                 telegram_chat_id_dueno=datos.get("telegram_chat_id_dueno"),

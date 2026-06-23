@@ -141,7 +141,7 @@ class TestProcesarMensajeOperador:
         await procesar_mensaje_operador("445", "PEDRO GARCIA", _sesion_mock())
         await procesar_mensaje_operador("445", "ninguno", _sesion_mock())
         assert _sesiones_registro["445"]["datos"]["telegram_chat_id_dueno"] is None
-        assert _sesiones_registro["445"]["paso"] == "correos_notificacion"
+        assert _sesiones_registro["445"]["paso"] == "telegram_empleado"
 
     @pytest.mark.asyncio
     async def test_telegram_dueno_valido_acepta(self) -> None:
@@ -163,6 +163,28 @@ class TestProcesarMensajeOperador:
         assert _sesiones_registro["447"]["paso"] == "telegram_dueno"
 
     @pytest.mark.asyncio
+    async def test_telegram_empleado_valido_acepta(self) -> None:
+        await procesar_mensaje_operador("449", "/nuevo_cliente", _sesion_mock())
+        await procesar_mensaje_operador("449", "Tienda", _sesion_mock())
+        await procesar_mensaje_operador("449", "tienda", _sesion_mock())
+        await procesar_mensaje_operador("449", "PEDRO GARCIA", _sesion_mock())
+        await procesar_mensaje_operador("449", "ninguno", _sesion_mock())
+        await procesar_mensaje_operador("449", "111222333", _sesion_mock())
+        assert _sesiones_registro["449"]["datos"]["telegram_chat_id_empleado"] == "111222333"
+        assert _sesiones_registro["449"]["paso"] == "correos_notificacion"
+
+    @pytest.mark.asyncio
+    async def test_telegram_empleado_invalido_rechaza(self) -> None:
+        await procesar_mensaje_operador("450", "/nuevo_cliente", _sesion_mock())
+        await procesar_mensaje_operador("450", "Tienda", _sesion_mock())
+        await procesar_mensaje_operador("450", "tienda", _sesion_mock())
+        await procesar_mensaje_operador("450", "PEDRO GARCIA", _sesion_mock())
+        await procesar_mensaje_operador("450", "ninguno", _sesion_mock())
+        respuesta = await procesar_mensaje_operador("450", "abc123", _sesion_mock())
+        assert "inválido" in respuesta.lower()
+        assert _sesiones_registro["450"]["paso"] == "telegram_empleado"
+
+    @pytest.mark.asyncio
     async def test_correos_notificacion_ninguno(self) -> None:
         cliente = _cliente_mock()
         with patch("src.servicios.registro_cliente.cliente_repo.crear", return_value=cliente) as mock_crear, \
@@ -171,6 +193,7 @@ class TestProcesarMensajeOperador:
             await procesar_mensaje_operador("448", "Mi Tienda", _sesion_mock())
             await procesar_mensaje_operador("448", "mitienda", _sesion_mock())
             await procesar_mensaje_operador("448", "PEDRO GARCIA", _sesion_mock())
+            await procesar_mensaje_operador("448", "ninguno", _sesion_mock())
             await procesar_mensaje_operador("448", "ninguno", _sesion_mock())
             await procesar_mensaje_operador("448", "ninguno", _sesion_mock())
         _, kwargs = mock_crear.call_args
@@ -190,6 +213,7 @@ class TestProcesarMensajeOperador:
             await procesar_mensaje_operador("555", "panaderia", _sesion_mock())
             await procesar_mensaje_operador("555", "PEDRO GARCIA LOPEZ", _sesion_mock())
             await procesar_mensaje_operador("555", "987654321", _sesion_mock())
+            await procesar_mensaje_operador("555", "111222333", _sesion_mock())
             sesion = _sesion_mock()
             respuesta = await procesar_mensaje_operador("555", "empleado@panaderia.com", sesion)
 
@@ -197,6 +221,7 @@ class TestProcesarMensajeOperador:
         _, kwargs = mock_crear.call_args
         assert kwargs["nombre_titular_cuenta"] == "PEDRO GARCIA LOPEZ"
         assert kwargs["telegram_chat_id_dueno"] == "987654321"
+        assert kwargs["telegram_chat_ids"] == ["111222333"]
         mock_alias.assert_called_once_with("panaderia")
         assert "registrado" in respuesta.lower()
         assert str(cliente.token_dashboard) in respuesta
@@ -209,6 +234,7 @@ class TestProcesarMensajeOperador:
             await procesar_mensaje_operador("666", "Tienda", _sesion_mock())
             await procesar_mensaje_operador("666", "tienda", _sesion_mock())
             await procesar_mensaje_operador("666", "PEDRO GARCIA", _sesion_mock())
+            await procesar_mensaje_operador("666", "ninguno", _sesion_mock())
             await procesar_mensaje_operador("666", "ninguno", _sesion_mock())
             respuesta = await procesar_mensaje_operador("666", "ninguno", _sesion_mock())
         assert "Ya existe" in respuesta
