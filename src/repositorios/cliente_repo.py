@@ -1,10 +1,13 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import cast
+from sqlalchemy import cast, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 from src.modelos.cliente import Cliente
+
+_DIAS_SUSCRIPCION: int = 30
 
 
 class ErrorClienteDuplicado(Exception):
@@ -28,7 +31,10 @@ def obtener_por_chat_id(chat_id: str, sesion: Session) -> Cliente | None:
         sesion.query(Cliente)
         .filter(
             Cliente.activo.is_(True),
-            Cliente.telegram_chat_ids.op("@>")(cast([chat_id], JSONB)),
+            (
+                Cliente.telegram_chat_ids.op("@>")(cast([chat_id], JSONB))
+                | (Cliente.telegram_chat_id_dueno == chat_id)
+            ),
         )
         .first()
     )
@@ -48,12 +54,68 @@ def rotar_token(id_cliente: uuid.UUID, sesion: Session) -> Cliente | None:
     return cliente
 
 
+def buscar_por_titular(nombre: str, sesion: Session) -> Cliente | None:
+    return (
+        sesion.query(Cliente)
+        .filter(
+            Cliente.activo.is_(True),
+            func.lower(Cliente.nombre_titular_cuenta) == nombre.lower().strip(),
+        )
+        .first()
+    )
+
+
+def renovar_suscripcion(id_cliente: uuid.UUID, sesion: Session) -> Cliente | None:
+    cliente = obtener_por_id(id_cliente, sesion)
+    if not cliente:
+        return None
+    cliente.fecha_vencimiento_suscripcion = datetime.now(timezone.utc) + timedelta(days=_DIAS_SUSCRIPCION)
+    cliente.suscripcion_activa = True
+    sesion.commit()
+    sesion.refresh(cliente)
+    return cliente
+
+
+def activar_suscripcion(id_cliente: uuid.UUID, sesion: Session) -> Cliente | None:
+    return renovar_suscripcion(id_cliente, sesion)
+
+
+def listar_por_vencer(dias: int, sesion: Session) -> list[Cliente]:
+    ahora = datetime.now(timezone.utc)
+    limite = ahora + timedelta(days=dias)
+    return (
+        sesion.query(Cliente)
+        .filter(
+            Cliente.activo.is_(True),
+            Cliente.suscripcion_activa.is_(True),
+            Cliente.fecha_vencimiento_suscripcion >= ahora,
+            Cliente.fecha_vencimiento_suscripcion <= limite,
+        )
+        .all()
+    )
+
+
+def listar_suscripcion_vencida(sesion: Session) -> list[Cliente]:
+    ahora = datetime.now(timezone.utc)
+    return (
+        sesion.query(Cliente)
+        .filter(
+            Cliente.activo.is_(True),
+            Cliente.suscripcion_activa.is_(True),
+            Cliente.fecha_vencimiento_suscripcion < ahora,
+        )
+        .all()
+    )
+
+
 def crear(
     nombre_negocio: str,
     correo_dedicado: str,
     telegram_chat_ids: list[str],
     correos_notificacion: list[str],
     sesion: Session,
+    telegram_chat_id_dueno: str | None = None,
+    nombre_titular_cuenta: str | None = None,
 ) -> Cliente:
     if obtener_por_correo_dedicado(correo_dedicado, sesion):
         raise ErrorClienteDuplicado(correo_dedicado)
@@ -61,7 +123,9 @@ def crear(
         nombre_negocio=nombre_negocio,
         correo_dedicado=correo_dedicado,
         telegram_chat_ids=telegram_chat_ids,
+        telegram_chat_id_dueno=telegram_chat_id_dueno,
         correos_notificacion=correos_notificacion,
+        nombre_titular_cuenta=nombre_titular_cuenta,
         token_dashboard=uuid.uuid4(),
         activo=True,
     )
