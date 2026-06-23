@@ -95,6 +95,20 @@ class TestProcesarActualizacion:
         )
 
     @pytest.mark.asyncio
+    async def test_empleado_recibe_url_con_comando_dashboard(self) -> None:
+        actualizacion = self._crear_actualizacion("/dashboard", chat_id=-123456789)
+        sesion = MagicMock()
+        with patch("src.servicios.verificar_pago.ajustes") as mock_ajustes, \
+             patch("src.servicios.verificar_pago.registro_cliente") as mock_registro, \
+             patch("src.servicios.verificar_pago.enviar_mensaje", new_callable=AsyncMock) as mock_enviar:
+            mock_ajustes.operador_telegram_chat_id = ""
+            mock_registro.es_comando_dashboard.return_value = True
+            mock_registro.responder_dashboard_cliente.return_value = "🔗 Dashboard: https://..."
+            await procesar_actualizacion(actualizacion, sesion)
+            mock_registro.responder_dashboard_cliente.assert_called_once()
+            mock_enviar.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_operador_enrutado_a_registro(self) -> None:
         actualizacion = self._crear_actualizacion("/nuevo_cliente", chat_id=999999999)
         sesion = MagicMock()
@@ -117,6 +131,7 @@ class TestProcesarActualizacion:
              patch("src.servicios.verificar_pago.registro_cliente") as mock_registro, \
              patch("src.servicios.verificar_pago.cliente_repo") as mock_repo:
             mock_ajustes.operador_telegram_chat_id = ""
+            mock_registro.es_comando_dashboard.return_value = False
             mock_repo.obtener_por_chat_id.return_value = None
             await procesar_actualizacion(actualizacion, sesion)
             mock_registro.procesar_mensaje_operador.assert_not_called()

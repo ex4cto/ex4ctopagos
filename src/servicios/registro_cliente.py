@@ -14,16 +14,42 @@ from src.servicios.alias_forward_email import ErrorCrearAlias
 logger = logging.getLogger(__name__)
 
 _TIMEOUT_SESION_SEGUNDOS = 600
-_COMANDO = "/nuevo_cliente"
+_COMANDO_NUEVO_CLIENTE = "/nuevo_cliente"
+_COMANDO_MI_DASHBOARD = "/mi_dashboard"
+_COMANDO_DASHBOARD = "/dashboard"
 _RE_ALIAS_VALIDO = re.compile(r"^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$")
 
 _sesiones_registro: dict[str, dict] = {}
 
 
-def es_comando_nuevo_cliente(texto: str | None) -> bool:
+def _detectar_comando(texto: str | None, comando: str) -> bool:
     if not texto:
         return False
-    return texto.strip().lower().split("@")[0] == _COMANDO
+    return texto.strip().lower().split("@")[0] == comando
+
+
+def es_comando_nuevo_cliente(texto: str | None) -> bool:
+    return _detectar_comando(texto, _COMANDO_NUEVO_CLIENTE)
+
+
+def es_comando_mi_dashboard(texto: str | None) -> bool:
+    return _detectar_comando(texto, _COMANDO_MI_DASHBOARD)
+
+
+def es_comando_dashboard(texto: str | None) -> bool:
+    return _detectar_comando(texto, _COMANDO_DASHBOARD)
+
+
+def responder_mi_dashboard() -> str:
+    return f"🔗 Tu panel de operador:\n{ajustes.app_url}/operador/dashboard"
+
+
+def responder_dashboard_cliente(chat_id: str, sesion: Session) -> str | None:
+    cliente = cliente_repo.obtener_por_chat_id(chat_id, sesion)
+    if not cliente:
+        return None
+    url = f"{ajustes.app_url}/dashboard/{cliente.token_dashboard}"
+    return f"🔗 Dashboard de {html.escape(cliente.nombre_negocio)}:\n{url}"
 
 
 def _sesion_expirada(sesion: dict) -> bool:
@@ -65,6 +91,8 @@ async def procesar_mensaje_operador(
         estado = None
 
     if estado is None:
+        if es_comando_mi_dashboard(texto):
+            return responder_mi_dashboard()
         if not es_comando_nuevo_cliente(texto):
             return None
         _sesiones_registro[chat_id] = {"paso": "nombre", "datos": {}, "timestamp": time.time()}

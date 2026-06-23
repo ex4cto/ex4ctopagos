@@ -65,6 +65,12 @@ async def procesar_actualizacion(
             await enviar_mensaje(chat_id, respuesta)
         return
 
+    if registro_cliente.es_comando_dashboard(mensaje.texto):
+        respuesta = registro_cliente.responder_dashboard_cliente(chat_id, sesion)
+        if respuesta:
+            await enviar_mensaje(chat_id, respuesta)
+        return
+
     if not _es_comando_verificar_pago(mensaje.texto):
         return
     ahora = datetime.now(timezone.utc)

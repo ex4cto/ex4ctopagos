@@ -8,8 +8,12 @@ from src.repositorios.cliente_repo import ErrorClienteDuplicado
 from src.servicios.alias_forward_email import ErrorCrearAlias
 from src.servicios.registro_cliente import (
     _sesiones_registro,
+    es_comando_dashboard,
+    es_comando_mi_dashboard,
     es_comando_nuevo_cliente,
     procesar_mensaje_operador,
+    responder_dashboard_cliente,
+    responder_mi_dashboard,
 )
 
 
@@ -26,6 +30,59 @@ def _cliente_mock() -> MagicMock:
     cliente.id = uuid.uuid4()
     cliente.token_dashboard = uuid.uuid4()
     return cliente
+
+
+class TestComandosDashboard:
+    def test_mi_dashboard_detecta_exacto(self) -> None:
+        assert es_comando_mi_dashboard("/mi_dashboard") is True
+
+    def test_mi_dashboard_detecta_con_sufijo_bot(self) -> None:
+        assert es_comando_mi_dashboard("/mi_dashboard@mibot") is True
+
+    def test_mi_dashboard_rechaza_otro(self) -> None:
+        assert es_comando_mi_dashboard("/dashboard") is False
+
+    def test_dashboard_detecta_exacto(self) -> None:
+        assert es_comando_dashboard("/dashboard") is True
+
+    def test_dashboard_detecta_con_sufijo_bot(self) -> None:
+        assert es_comando_dashboard("/dashboard@mibot") is True
+
+    def test_dashboard_rechaza_otro(self) -> None:
+        assert es_comando_dashboard("/mi_dashboard") is False
+
+    def test_responder_mi_dashboard_incluye_url(self) -> None:
+        with patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.app_url = "https://ex4ctopagos.up.railway.app"
+            respuesta = responder_mi_dashboard()
+        assert "/operador/dashboard" in respuesta
+
+    def test_responder_dashboard_cliente_con_cliente(self) -> None:
+        cliente = _cliente_mock()
+        cliente.nombre_negocio = "Panadería López"
+        sesion = MagicMock()
+        with patch("src.servicios.registro_cliente.cliente_repo.obtener_por_chat_id", return_value=cliente), \
+             patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.app_url = "https://ex4ctopagos.up.railway.app"
+            respuesta = responder_dashboard_cliente("123", sesion)
+        assert respuesta is not None
+        assert str(cliente.token_dashboard) in respuesta
+
+    def test_responder_dashboard_cliente_sin_cliente(self) -> None:
+        sesion = MagicMock()
+        with patch("src.servicios.registro_cliente.cliente_repo.obtener_por_chat_id", return_value=None):
+            respuesta = responder_dashboard_cliente("999", sesion)
+        assert respuesta is None
+
+    @pytest.mark.asyncio
+    async def test_mi_dashboard_respondido_en_flujo_operador(self) -> None:
+        _limpiar_sesiones()
+        with patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
+            mock_ajustes.app_url = "https://ex4ctopagos.up.railway.app"
+            mock_ajustes.operador_telegram_chat_id = "111"
+            respuesta = await procesar_mensaje_operador("111", "/mi_dashboard", MagicMock())
+        assert respuesta is not None
+        assert "/operador/dashboard" in respuesta
 
 
 class TestEsComandoNuevoCliente:
