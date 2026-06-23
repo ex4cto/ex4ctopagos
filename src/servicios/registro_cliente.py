@@ -18,6 +18,7 @@ _COMANDO_NUEVO_CLIENTE = "/nuevo_cliente"
 _COMANDO_MI_DASHBOARD = "/mi_dashboard"
 _COMANDO_DASHBOARD = "/dashboard"
 _RE_ALIAS_VALIDO = re.compile(r"^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$")
+_RE_CHAT_ID_VALIDO = re.compile(r"^\d+$")
 
 _sesiones_registro: dict[str, dict] = {}
 
@@ -112,6 +113,19 @@ async def procesar_mensaje_operador(
         if not _RE_ALIAS_VALIDO.match(alias):
             return "Alias inválido. Usá solo letras minúsculas, números y guiones (sin espacios ni caracteres especiales). Intentá de nuevo."
         estado["datos"]["alias"] = alias
+        estado["paso"] = "nombre_titular"
+        return "¿Nombre completo del titular de la cuenta bancaria? (como aparece en transferencias — ej: PEDRO GARCIA LOPEZ)"
+
+    if paso == "nombre_titular":
+        estado["datos"]["nombre_titular_cuenta"] = texto.strip()
+        estado["paso"] = "telegram_dueno"
+        return "¿Chat ID de Telegram del dueño del negocio? (solo números — escribe «ninguno» si no aplica)"
+
+    if paso == "telegram_dueno":
+        texto_limpio = texto.strip().lower()
+        if texto_limpio != "ninguno" and not _RE_CHAT_ID_VALIDO.match(texto.strip()):
+            return "Chat ID inválido. Debe contener solo números. Intentá de nuevo o escribí «ninguno»."
+        estado["datos"]["telegram_chat_id_dueno"] = None if texto_limpio == "ninguno" else texto.strip()
         estado["paso"] = "correos_notificacion"
         return "¿Correos de notificación del empleado? (separados por coma, o escribe «ninguno»)"
 
@@ -129,6 +143,8 @@ async def procesar_mensaje_operador(
                 telegram_chat_ids=[],
                 correos_notificacion=correos,
                 sesion=sesion,
+                telegram_chat_id_dueno=datos.get("telegram_chat_id_dueno"),
+                nombre_titular_cuenta=datos.get("nombre_titular_cuenta"),
             )
         except ErrorClienteDuplicado:
             _limpiar_sesion(chat_id)
