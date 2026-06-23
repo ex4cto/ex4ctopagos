@@ -33,6 +33,11 @@ class Ajustes(BaseSettings):
     # Forward Email — gestión de aliases
     forward_email_dominio: str = ""
 
+    # Suscripciones
+    precio_suscripcion_cop: int = 50000
+    llave_cobro_operador: str = ""
+    alias_suscripciones: str = "suscripciones"
+
     # App
     ambiente: str = "produccion"
     app_url: str = "https://ex4ctopagos-production.up.railway.app"

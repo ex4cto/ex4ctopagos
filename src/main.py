@@ -43,6 +43,9 @@ if not ajustes.operador_telegram_chat_id:
 if not ajustes.forward_email_dominio:
     logger.warning("FORWARD_EMAIL_DOMINIO no configurado — creacion de aliases deshabilitada")
 
+if not ajustes.llave_cobro_operador:
+    logger.warning("LLAVE_COBRO_OPERADOR no configurada — notificaciones de pago de suscripcion incompletas")
+
 aplicacion = FastAPI(
     title="Bot Comprobante de Pago",
     version="1.0.0",
