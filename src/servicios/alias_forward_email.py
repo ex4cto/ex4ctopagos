@@ -21,7 +21,7 @@ async def crear_alias(nombre_alias: str) -> str:
         f"&correo={correo_dedicado}"
     )
     url = f"{_URL_BASE_API}/{ajustes.forward_email_dominio}/aliases"
-    auth = (ajustes.correo_remitente, ajustes.correo_clave)
+    auth = (ajustes.correo_clave, "")
     cuerpo = {"name": nombre_alias, "recipients": [url_webhook]}
 
     async with httpx.AsyncClient(timeout=15) as cliente:

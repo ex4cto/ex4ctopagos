@@ -31,6 +31,7 @@ class TestCrearAlias:
         cuerpo = llamada.kwargs["json"]
         assert cuerpo["name"] == "panaderia"
         assert "panaderia@ex4cto.co" in cuerpo["recipients"][0]
+        assert llamada.kwargs["auth"] == ("clave123", "")
 
     @pytest.mark.asyncio
     async def test_crear_alias_error_api(self) -> None:
