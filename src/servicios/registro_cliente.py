@@ -19,6 +19,7 @@ _COMANDO_MI_DASHBOARD = "/mi_dashboard"
 _COMANDO_DASHBOARD = "/dashboard"
 _COMANDO_AGREGAR_EMPLEADO = "/agregar_empleado"
 _COMANDO_REMOVER_EMPLEADO = "/remover_empleado"
+_COMANDO_CONFIRMAR_ALIAS = "/confirmar_alias"
 _RE_ALIAS_VALIDO = re.compile(r"^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$|^[a-z0-9]$")
 _RE_CHAT_ID_VALIDO = re.compile(r"^\d+$")
 
@@ -49,6 +50,23 @@ def es_comando_agregar_empleado(texto: str | None) -> bool:
 
 def es_comando_remover_empleado(texto: str | None) -> bool:
     return _detectar_comando(texto, _COMANDO_REMOVER_EMPLEADO)
+
+
+def es_comando_confirmar_alias(texto: str | None) -> bool:
+    if not texto:
+        return False
+    primera_palabra = texto.strip().lower().split()[0]
+    return primera_palabra.split("@")[0] == _COMANDO_CONFIRMAR_ALIAS
+
+
+def _extraer_alias_de_comando(texto: str) -> str | None:
+    partes = texto.strip().split()
+    if len(partes) < 2:
+        return None
+    alias = partes[1].lower()
+    if not _RE_ALIAS_VALIDO.match(alias):
+        return None
+    return alias
 
 
 def responder_mi_dashboard() -> str:
@@ -87,8 +105,15 @@ def _formatear_confirmacion(
     correo_dedicado: str,
     token_dashboard: object,
 ) -> str:
-    dominio = ajustes.forward_email_dominio
+    alias = correo_dedicado.split("@")[0]
     url_dashboard = f"{ajustes.app_url}/dashboard/{token_dashboard}"
+    seccion_confirmacion = ""
+    if ajustes.correo_confirmacion_alias:
+        seccion_confirmacion = (
+            f"\n\n📨 Confirmación de reenvío:\n"
+            f"El operador recibirá un correo de confirmación en {html.escape(ajustes.correo_confirmacion_alias)}.\n"
+            f"Una vez confirmado, ejecutá: /confirmar_alias {alias}"
+        )
     return (
         f"✅ Cliente registrado.\n"
         f"📧 Alias: {html.escape(correo_dedicado)}\n"
@@ -98,6 +123,7 @@ def _formatear_confirmacion(
         f"2. Campo <b>De</b>: @notificacionesbancolombia.com OR @nequi.com.co\n"
         f"3. Acción: Reenviar a <b>{html.escape(correo_dedicado)}</b>\n"
         f"4. Guardar filtro"
+        f"{seccion_confirmacion}"
     )
 
 
@@ -121,6 +147,20 @@ async def procesar_mensaje_operador(
         if es_comando_remover_empleado(texto):
             _sesiones_registro[chat_id] = {"paso": "remover_empleado_chat_id", "datos": {}, "timestamp": time.time()}
             return "¿Chat ID del empleado a remover?"
+        if es_comando_confirmar_alias(texto):
+            alias = _extraer_alias_de_comando(texto)
+            if not alias:
+                return "Uso: /confirmar_alias <alias> — ej: /confirmar_alias panaderia"
+            try:
+                await alias_forward_email.remover_destinatario_confirmacion(alias)
+            except alias_forward_email.ErrorActualizarAlias as exc:
+                logger.warning(
+                    "Error removiendo destinatario confirmacion para %s: %s",
+                    alias,
+                    exc,
+                )
+                return f"⚠️ No se pudo remover el correo de confirmación para {html.escape(alias)}. Verificá en Forward Email."
+            return f"✅ Correo de confirmación removido del alias {html.escape(alias)}."
         if not es_comando_nuevo_cliente(texto):
             return None
         _sesiones_registro[chat_id] = {"paso": "nombre", "datos": {}, "timestamp": time.time()}
@@ -200,6 +240,15 @@ async def procesar_mensaje_operador(
                 f"⚠️ Cliente registrado en BD pero el alias no se creó automáticamente.\n"
                 f"Creá el alias manualmente en Forward Email para: {html.escape(correo_dedicado)}\n"
                 f"🔗 Dashboard: {ajustes.app_url}/dashboard/{cliente.token_dashboard}"
+            )
+
+        try:
+            await alias_forward_email.agregar_destinatario_confirmacion(alias)
+        except alias_forward_email.ErrorActualizarAlias as exc:
+            logger.warning(
+                "Alias creado (id=%s) pero no se pudo agregar correo de confirmacion: %s",
+                cliente.id,
+                exc,
             )
 
         _limpiar_sesion(chat_id)

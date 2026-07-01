@@ -17,6 +17,7 @@ class Ajustes(BaseSettings):
     # Correo saliente (Forward Email REST API)
     correo_remitente: str = ""
     correo_clave: str = ""
+    correo_confirmacion_alias: str = ""
 
     # Dashboard operador
     operador_clave: str = ""
