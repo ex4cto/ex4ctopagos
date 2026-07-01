@@ -54,8 +54,8 @@ def insertar_cliente(
 
 if __name__ == "__main__":
     insertar_cliente(
-        nombre_negocio="Negocio Prueba",
-        correo_dedicado="negocio1@ex4cto.co",
-        telegram_chat_ids=["5870211102"],
-        correos_notificacion=["encierraculo@gmail.com"],
+        nombre_negocio="Negocio Ejemplo",
+        correo_dedicado="negocio-ejemplo@tudominio.com",
+        telegram_chat_ids=["123456789"],
+        correos_notificacion=["notificaciones@tuempresa.com"],
     )

@@ -95,7 +95,7 @@ class TestNotificarVencimientosProximos:
              patch("src.servicios.suscripcion.ejecutar_con_reintentos", new_callable=AsyncMock):
             mock_ajustes.operador_telegram_chat_id = "111"
             mock_ajustes.precio_suscripcion_cop = 50000
-            mock_ajustes.llave_cobro_operador = "1047487553"
+            mock_ajustes.llave_cobro_operador = "3001234567"
             mock_ajustes.max_reintentos_notificacion = 3
             mock_ajustes.intervalo_reintento_segundos = 30
             mock_repo.listar_por_vencer.return_value = [cliente]

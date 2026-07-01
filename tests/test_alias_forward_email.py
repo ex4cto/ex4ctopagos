@@ -13,12 +13,12 @@ from src.servicios.alias_forward_email import (
 
 
 def _mock_ajustes_base(mock_ajustes: MagicMock) -> None:
-    mock_ajustes.forward_email_dominio = "ex4cto.co"
-    mock_ajustes.app_url = "https://ex4ctopagos-production.up.railway.app"
+    mock_ajustes.forward_email_dominio = "tudominio.com"
+    mock_ajustes.app_url = "http://localhost:8000"
     mock_ajustes.webhook_secret = "secreto123"
-    mock_ajustes.correo_remitente = "bot@ex4cto.co"
+    mock_ajustes.correo_remitente = "bot@tudominio.com"
     mock_ajustes.correo_clave = "clave123"
-    mock_ajustes.correo_confirmacion_alias = "confirmacion@gmail.com"
+    mock_ajustes.correo_confirmacion_alias = "confirmacion@example.com"
 
 
 class TestCrearAlias:
@@ -38,11 +38,11 @@ class TestCrearAlias:
 
             resultado = await crear_alias("panaderia")
 
-        assert resultado == "panaderia@ex4cto.co"
+        assert resultado == "panaderia@tudominio.com"
         llamada = mock_http.post.call_args
         cuerpo = llamada.kwargs["json"]
         assert cuerpo["name"] == "panaderia"
-        assert "panaderia@ex4cto.co" in cuerpo["recipients"][0]
+        assert "panaderia@tudominio.com" in cuerpo["recipients"][0]
         assert llamada.kwargs["auth"] == ("clave123", "")
 
     @pytest.mark.asyncio
@@ -150,8 +150,8 @@ class TestAgregarDestinatarioConfirmacion:
         llamada_put = mock_http.put.call_args
         destinatarios = llamada_put.kwargs["json"]["recipients"]
         assert len(destinatarios) == 2
-        assert "panaderia@ex4cto.co" in destinatarios[0]
-        assert destinatarios[1] == "confirmacion@gmail.com"
+        assert "panaderia@tudominio.com" in destinatarios[0]
+        assert destinatarios[1] == "confirmacion@example.com"
 
     @pytest.mark.asyncio
     async def test_agregar_destinatario_alias_no_encontrado(self) -> None:
@@ -220,7 +220,7 @@ class TestRemoverDestinatarioConfirmacion:
         llamada_put = mock_http.put.call_args
         destinatarios = llamada_put.kwargs["json"]["recipients"]
         assert len(destinatarios) == 1
-        assert "panaderia@ex4cto.co" in destinatarios[0]
+        assert "panaderia@tudominio.com" in destinatarios[0]
 
     @pytest.mark.asyncio
     async def test_remover_destinatario_alias_no_encontrado(self) -> None:

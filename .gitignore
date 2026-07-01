@@ -8,3 +8,6 @@ __pycache__/
 dist/
 build/
 .alembic_cache/
+.atl/
+.claude/
+.mypy_cache/

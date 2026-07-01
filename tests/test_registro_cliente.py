@@ -5,10 +5,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.repositorios.cliente_repo import ErrorClienteDuplicado
-from src.servicios.alias_forward_email import ErrorCrearAlias
+from src.servicios.alias_forward_email import ErrorActualizarAlias, ErrorCrearAlias
 from src.servicios.registro_cliente import (
     _sesiones_registro,
     es_comando_agregar_empleado,
+    es_comando_confirmar_alias,
     es_comando_dashboard,
     es_comando_mi_dashboard,
     es_comando_nuevo_cliente,
@@ -64,7 +65,7 @@ class TestComandosDashboard:
 
     def test_responder_mi_dashboard_incluye_url(self) -> None:
         with patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
-            mock_ajustes.app_url = "https://ex4ctopagos.up.railway.app"
+            mock_ajustes.app_url = "http://localhost:8000"
             respuesta = responder_mi_dashboard()
         assert "/operador/dashboard" in respuesta
 
@@ -74,7 +75,7 @@ class TestComandosDashboard:
         sesion = MagicMock()
         with patch("src.servicios.registro_cliente.cliente_repo.obtener_por_chat_id", return_value=cliente), \
              patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
-            mock_ajustes.app_url = "https://ex4ctopagos.up.railway.app"
+            mock_ajustes.app_url = "http://localhost:8000"
             respuesta = responder_dashboard_cliente("123", sesion)
         assert respuesta is not None
         assert str(cliente.token_dashboard) in respuesta
@@ -89,7 +90,7 @@ class TestComandosDashboard:
     async def test_mi_dashboard_respondido_en_flujo_operador(self) -> None:
         _limpiar_sesiones()
         with patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
-            mock_ajustes.app_url = "https://ex4ctopagos.up.railway.app"
+            mock_ajustes.app_url = "http://localhost:8000"
             mock_ajustes.operador_telegram_chat_id = "111"
             respuesta = await procesar_mensaje_operador("111", "/mi_dashboard", MagicMock())
         assert respuesta is not None
@@ -199,7 +200,8 @@ class TestProcesarMensajeOperador:
     async def test_correos_notificacion_ninguno(self) -> None:
         cliente = _cliente_mock()
         with patch("src.servicios.registro_cliente.cliente_repo.crear", return_value=cliente) as mock_crear, \
-             patch("src.servicios.registro_cliente.alias_forward_email.crear_alias", new_callable=AsyncMock):
+             patch("src.servicios.registro_cliente.alias_forward_email.crear_alias", new_callable=AsyncMock), \
+             patch("src.servicios.registro_cliente.alias_forward_email.agregar_destinatario_confirmacion", new_callable=AsyncMock):
             await procesar_mensaje_operador("448", "/nuevo_cliente", _sesion_mock())
             await procesar_mensaje_operador("448", "Mi Tienda", _sesion_mock())
             await procesar_mensaje_operador("448", "mitienda", _sesion_mock())
@@ -215,9 +217,11 @@ class TestProcesarMensajeOperador:
         cliente = _cliente_mock()
         with patch("src.servicios.registro_cliente.cliente_repo.crear", return_value=cliente) as mock_crear, \
              patch("src.servicios.registro_cliente.alias_forward_email.crear_alias", new_callable=AsyncMock) as mock_alias, \
+             patch("src.servicios.registro_cliente.alias_forward_email.agregar_destinatario_confirmacion", new_callable=AsyncMock), \
              patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
             mock_ajustes.forward_email_dominio = "ex4cto.co"
-            mock_ajustes.app_url = "https://ex4ctopagos-production.up.railway.app"
+            mock_ajustes.app_url = "http://localhost:8000"
+            mock_ajustes.correo_confirmacion_alias = ""
 
             await procesar_mensaje_operador("555", "/nuevo_cliente", _sesion_mock())
             await procesar_mensaje_operador("555", "Panadería López", _sesion_mock())
@@ -278,9 +282,11 @@ class TestProcesarMensajeOperador:
         cliente = _cliente_mock()
         with patch("src.servicios.registro_cliente.cliente_repo.crear", return_value=cliente) as mock_crear, \
              patch("src.servicios.registro_cliente.alias_forward_email.crear_alias", new_callable=AsyncMock), \
+             patch("src.servicios.registro_cliente.alias_forward_email.agregar_destinatario_confirmacion", new_callable=AsyncMock), \
              patch("src.servicios.registro_cliente.ajustes") as mock_ajustes:
             mock_ajustes.forward_email_dominio = "ex4cto.co"
-            mock_ajustes.app_url = "https://ex4ctopagos-production.up.railway.app"
+            mock_ajustes.app_url = "http://localhost:8000"
+            mock_ajustes.correo_confirmacion_alias = ""
             await procesar_mensaje_operador("453", "/nuevo_cliente", _sesion_mock())
             await procesar_mensaje_operador("453", "Tienda", _sesion_mock())
             await procesar_mensaje_operador("453", "tienda", _sesion_mock())
@@ -375,3 +381,59 @@ class TestProcesarMensajeOperador:
         respuesta = await procesar_mensaje_operador("777", "Tienda", _sesion_mock())
         assert respuesta is None
         assert "777" not in _sesiones_registro
+
+
+class TestConfirmarAlias:
+    def setup_method(self) -> None:
+        _limpiar_sesiones()
+
+    def test_es_comando_confirmar_alias_exacto(self) -> None:
+        assert es_comando_confirmar_alias("/confirmar_alias panaderia") is True
+
+    def test_es_comando_confirmar_alias_sin_argumento(self) -> None:
+        assert es_comando_confirmar_alias("/confirmar_alias") is True
+
+    def test_es_comando_confirmar_alias_con_sufijo_bot(self) -> None:
+        assert es_comando_confirmar_alias("/confirmar_alias@mibot panaderia") is True
+
+    def test_es_comando_confirmar_alias_rechaza_otro(self) -> None:
+        assert es_comando_confirmar_alias("/nuevo_cliente") is False
+
+    def test_es_comando_confirmar_alias_rechaza_none(self) -> None:
+        assert es_comando_confirmar_alias(None) is False
+
+    @pytest.mark.asyncio
+    async def test_confirmar_alias_sin_argumento_retorna_uso(self) -> None:
+        respuesta = await procesar_mensaje_operador("800", "/confirmar_alias", _sesion_mock())
+        assert respuesta is not None
+        assert "Uso:" in respuesta
+
+    @pytest.mark.asyncio
+    async def test_confirmar_alias_alias_invalido_retorna_uso(self) -> None:
+        respuesta = await procesar_mensaje_operador("801", "/confirmar_alias ALIAS_INVALIDO!", _sesion_mock())
+        assert respuesta is not None
+        assert "Uso:" in respuesta
+
+    @pytest.mark.asyncio
+    async def test_confirmar_alias_exitoso(self) -> None:
+        with patch(
+            "src.servicios.registro_cliente.alias_forward_email.remover_destinatario_confirmacion",
+            new_callable=AsyncMock,
+        ) as mock_remover:
+            respuesta = await procesar_mensaje_operador("802", "/confirmar_alias panaderia", _sesion_mock())
+
+        mock_remover.assert_called_once_with("panaderia")
+        assert "✅" in respuesta
+        assert "panaderia" in respuesta
+
+    @pytest.mark.asyncio
+    async def test_confirmar_alias_error_api_retorna_advertencia(self) -> None:
+        with patch(
+            "src.servicios.registro_cliente.alias_forward_email.remover_destinatario_confirmacion",
+            new_callable=AsyncMock,
+            side_effect=ErrorActualizarAlias("No se encontró el alias"),
+        ):
+            respuesta = await procesar_mensaje_operador("803", "/confirmar_alias panaderia", _sesion_mock())
+
+        assert "⚠️" in respuesta
+        assert "panaderia" in respuesta

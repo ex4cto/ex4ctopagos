@@ -7,7 +7,7 @@ sys.path.insert(0, ".")
 from src.config.ajustes import ajustes
 from src.notificador.correo import enviar_correo
 
-_DESTINATARIO = "encierraculo@gmail.com"
+_DESTINATARIO = "destinatario@example.com"
 _ASUNTO = "Prueba Forward Email API — Ex4cto Pagos"
 _CUERPO = """
 <h2>Conexion Forward Email API funcionando</h2>

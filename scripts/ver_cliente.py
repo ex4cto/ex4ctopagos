@@ -46,7 +46,7 @@ def ver_y_corregir_cliente(
 
 if __name__ == "__main__":
     ver_y_corregir_cliente(
-        correo_dedicado="negocio1@ex4cto.co",
+        correo_dedicado="negocio-ejemplo@tudominio.com",
         # correos_notificacion=["nuevo@correo.com"],
         # telegram_chat_ids=["-123456789"],
     )

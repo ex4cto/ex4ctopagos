@@ -8,25 +8,25 @@ from src.parser.base import ErrorParseoBanco, detectar_banco, BANCO_BANCOLOMBIA,
 from src.parser.fabrica import obtener_parser
 from src.parser.nequi import ParserNequi
 
-# Texto real extraido del correo de Bancolombia (recepcion de pago)
+# Texto sintetico con formato de Bancolombia (recepcion de pago)
 TEXTO_BANCOLOMBIA_RECIBIDO = (
-    "Bancolombia: BRYAN, recibiste una transferencia de ALEJANDRO ARAQUE GONZALEZ "
-    "por $81,000.00 en tu cuenta *7488 conectada a la llave 1047487553 el 19/06/26 "
+    "Bancolombia: JUAN, recibiste una transferencia de CARLOS PEREZ MARTINEZ "
+    "por $81,000.00 en tu cuenta *1234 conectada a la llave 3001234567 el 19/06/26 "
     "a las 03:27. Con llaves es de una y gratis. Dudas al 018000912345."
 )
 
 # Mismo contenido pero con saltos de linea como llega en el cuerpo texto del webhook
 TEXTO_BANCOLOMBIA_MULTILINEA = (
-    "Bancolombia: BRYAN, recibiste una\n"
-    "transferencia de BRYAN DAVID CASTRO ALARCON por $100.00 en tu cuenta *7488\n"
-    "conectada a la llave 1047487553 el 20/06/26 a las 22:38. Con llaves es de una y\n"
+    "Bancolombia: JUAN, recibiste una\n"
+    "transferencia de LUIS GOMEZ RODRIGUEZ por $100.00 en tu cuenta *1234\n"
+    "conectada a la llave 3001234567 el 20/06/26 a las 22:38. Con llaves es de una y\n"
     "gratis. Dudas al 018000912345."
 )
 
-# Texto real extraido del correo Nequi (Bre-B recibido)
+# Texto sintetico con formato de Nequi (Bre-B recibido)
 TEXTO_NEQUI_RECIBIDO = (
-    "¡Hola, BRYAN CASTRO!\n\n"
-    "Recibiste 50.000 de Andrés Camilo de la Puente Rubio el 29 de abril de 2026 "
+    "¡Hola, LUIS GOMEZ!\n\n"
+    "Recibiste 50.000 de María García Torres el 29 de abril de 2026 "
     "a las 4:27 p.m, desde el banco Nubank. Revisa el detalle en los movimientos "
     "de tu app o descarga el comprobante si lo necesitas."
 )
@@ -55,7 +55,7 @@ class TestParserBancolombia:
     def test_parsea_remitente_correctamente(self) -> None:
         parser = ParserBancolombia()
         resultado = parser.parsear("", TEXTO_BANCOLOMBIA_RECIBIDO)
-        assert resultado.remitente == "ALEJANDRO ARAQUE GONZALEZ"
+        assert resultado.remitente == "CARLOS PEREZ MARTINEZ"
 
     def test_parsea_fecha_correctamente(self) -> None:
         parser = ParserBancolombia()
@@ -71,7 +71,7 @@ class TestParserBancolombia:
         parser = ParserBancolombia()
         resultado = parser.parsear("", TEXTO_BANCOLOMBIA_MULTILINEA)
         assert resultado.monto == Decimal("100.00")
-        assert resultado.remitente == "BRYAN DAVID CASTRO ALARCON"
+        assert resultado.remitente == "LUIS GOMEZ RODRIGUEZ"
 
     def test_falla_con_texto_invalido(self) -> None:
         parser = ParserBancolombia()
@@ -88,7 +88,7 @@ class TestParserNequi:
     def test_parsea_remitente_correctamente(self) -> None:
         parser = ParserNequi()
         resultado = parser.parsear("", TEXTO_NEQUI_RECIBIDO)
-        assert resultado.remitente == "Andrés Camilo de la Puente Rubio"
+        assert resultado.remitente == "María García Torres"
 
     def test_parsea_fecha_correctamente(self) -> None:
         parser = ParserNequi()

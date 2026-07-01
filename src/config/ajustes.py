@@ -41,7 +41,7 @@ class Ajustes(BaseSettings):
 
     # App
     ambiente: str = "produccion"
-    app_url: str = "https://ex4ctopagos-production.up.railway.app"
+    app_url: str = "http://localhost:8000"
 
 
 ajustes = Ajustes()
