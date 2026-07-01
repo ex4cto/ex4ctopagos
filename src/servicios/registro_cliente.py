@@ -150,7 +150,7 @@ async def procesar_mensaje_operador(
         if es_comando_confirmar_alias(texto):
             alias = _extraer_alias_de_comando(texto)
             if not alias:
-                return "Uso: /confirmar_alias <alias> — ej: /confirmar_alias panaderia"
+                return "Uso: /confirmar_alias [alias] — ej: /confirmar_alias panaderia"
             try:
                 await alias_forward_email.remover_destinatario_confirmacion(alias)
             except alias_forward_email.ErrorActualizarAlias as exc:
